@@ -1,43 +1,35 @@
-package jp.hisano.jna4wasm;
+package jp.hisano.jna4wasm.experiment;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 import com.google.common.io.ByteStreams;
 
+import io.github.kawamuray.wasmtime.Engine;
 import io.github.kawamuray.wasmtime.Func;
-import io.github.kawamuray.wasmtime.Linker;
+import io.github.kawamuray.wasmtime.Instance;
 import io.github.kawamuray.wasmtime.Memory;
 import io.github.kawamuray.wasmtime.Module;
 import io.github.kawamuray.wasmtime.Store;
 import io.github.kawamuray.wasmtime.Val;
-import io.github.kawamuray.wasmtime.wasi.Wasi;
-import io.github.kawamuray.wasmtime.wasi.WasiConfig;
 
-public class Hello {
+public class Greet {
     public static void main(String[] args) {
         try {
-            byte[] wasm = ByteStreams.toByteArray(Hello.class.getResourceAsStream("/hello.wasm"));
-            // Configure the initial compilation environment, creating the global
-            // `Store` structure. Note that you can also tweak configuration settings
-            // with a `Config` and an `Engine` if desired.
-            System.err.println("Initializing...");
+            byte[] wasm = ByteStreams.toByteArray(Greet.class.getResourceAsStream("/greet.wasm"));
 
             Store store = new Store();
-            Linker linker = new Linker(store);
+            Engine engine = store.engine();
+            Module module = Module.fromBinary(engine, wasm);
+            Instance instance = new Instance(store, module, Collections.emptyList());
 
-            Wasi wasi = new Wasi(store, new WasiConfig(new String[0], new WasiConfig.PreopenDir[0]));
-            Module module = Module.fromBinary(store.engine(), wasm);
-
-            wasi.addToLinker(linker);
-            linker.module("", module);
-
-            Memory memory = linker.getOneByName("", "memory").memory();
+            Memory memory = instance.getMemory("memory").get();
 
             byte[] subject = "Wasmer".getBytes(StandardCharsets.UTF_8);
 
             // Allocate memory for the subject, and get a pointer to it.
-            Func allocate = linker.getOneByName("", "malloc").func();
+            Func allocate = instance.getFunc("allocate").get();
             int input_pointer = allocate.call(Val.fromI32(subject.length))[0].i32();
 
             // Write the subject into the memory.
@@ -48,7 +40,7 @@ public class Hello {
             }
 
             // Run the `greet` function. Give the pointer to the subject.
-            int output_pointer = linker.getOneByName("", "hello").func().call(Val.fromI32(input_pointer))[0].i32();
+            int output_pointer = instance.getFunc("greet").get().call(Val.fromI32(input_pointer))[0].i32();
 
             // Read the result of the `greet` function.
             String result;
