@@ -14,16 +14,17 @@ plugins {
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
-    mavenLocal()
 }
 
 dependencies {
     // Use JUnit test framework.
     testImplementation("junit:junit:4.13.1")
 
+    compileOnly("org.projectlombok:lombok:1.18.12")
+
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     api("org.apache.commons:commons-math3:3.6.1")
-    api("jp.hisano:wasmer-windows:0.3.0")
+    api("io.github.kawamuray.wasmtime:wasmtime-java:0.4.0")
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation("com.google.guava:guava:30.0-jre")
