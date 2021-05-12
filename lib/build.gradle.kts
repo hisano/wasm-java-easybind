@@ -17,8 +17,9 @@ repositories {
 }
 
 dependencies {
-    // Use JUnit test framework.
-    testImplementation("junit:junit:4.13.1")
+    testImplementation(platform("org.junit:junit-bom:5.7.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.assertj:assertj-core:3.11.1")
 
     compileOnly("org.projectlombok:lombok:1.18.12")
 
@@ -28,4 +29,8 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation("com.google.guava:guava:30.0-jre")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
