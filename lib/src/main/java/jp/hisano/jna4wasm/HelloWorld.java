@@ -3,6 +3,8 @@ package jp.hisano.jna4wasm;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.google.common.io.ByteStreams;
+
 import io.github.kawamuray.wasmtime.Engine;
 import io.github.kawamuray.wasmtime.Extern;
 import io.github.kawamuray.wasmtime.Func;
@@ -14,6 +16,7 @@ import io.github.kawamuray.wasmtime.WasmFunctions;
 public class HelloWorld {
     public static void main(String[] args) {
         try {
+            byte[] wasm = ByteStreams.toByteArray(HelloWorld.class.getResourceAsStream("/hello2.wasm"));
             // Configure the initial compilation environment, creating the global
             // `Store` structure. Note that you can also tweak configuration settings
             // with a `Config` and an `Engine` if desired.
@@ -22,7 +25,7 @@ public class HelloWorld {
                 // Compile the wasm binary into an in-memory instance of a `Module`.
                 System.err.println("Compiling module...");
                 try (Engine engine = store.engine();
-                     Module module = Module.fromFile(engine, "./resources/hello2.wat")) {
+                     Module module = Module.fromBinary(engine, wasm)) {
                     // Here we handle the imports of the module, which in this case is our
                     // `HelloCallback` type and its associated implementation of `Callback.
                     System.err.println("Creating callback...");
