@@ -33,6 +33,10 @@ import java.util.Collections;
 import junit.framework.TestCase;
 
 public class AnnotatedLibraryTest extends TestCase {
+    @Override
+    protected void tearDown() throws Exception {
+        LibraryContext.get().dispose();
+    }
 
     @Retention(RetentionPolicy.RUNTIME)
     public @interface TestAnnotation {
