@@ -459,13 +459,13 @@ public class NativeLibrary {
                 else {
                     library = loadLibrary(libraryName, options);
                 }
-                ref = new WeakReference<NativeLibrary>(library);
-                libraries.put(library.getName() + options, ref);
-                File file = library.getFile();
-                if (file != null) {
-                    libraries.put(file.getAbsolutePath() + options, ref);
-                    libraries.put(file.getName() + options, ref);
-                }
+//                ref = new WeakReference<NativeLibrary>(library);
+//                libraries.put(library.getName() + options, ref);
+//                File file = library.getFile();
+//                if (file != null) {
+//                    libraries.put(file.getAbsolutePath() + options, ref);
+//                    libraries.put(file.getName() + options, ref);
+//                }
             }
             return library;
         }
