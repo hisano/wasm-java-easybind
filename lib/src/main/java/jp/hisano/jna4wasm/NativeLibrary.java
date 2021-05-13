@@ -85,7 +85,7 @@ public class NativeLibrary {
     private static final Logger LOG = Logger.getLogger(NativeLibrary.class.getName());
     private final static Level DEBUG_LOAD_LEVEL = Native.DEBUG_LOAD ? Level.INFO : Level.FINE;
 
-    private long handle;
+    static Context handle;
     private final String libraryName;
     private final String libraryPath;
     private final Map<String, Function> functions = new HashMap<String, Function>();
@@ -107,7 +107,7 @@ public class NativeLibrary {
         return name + "|" + flags + "|" + encoding;
     }
 
-    private NativeLibrary(String libraryName, String libraryPath, long handle, Map<String, ?> options) {
+    private NativeLibrary(String libraryName, String libraryPath, Context handle, Map<String, ?> options) {
         this.libraryName = getLibraryName(libraryName);
         this.libraryPath = libraryPath;
         this.handle = handle;
@@ -179,7 +179,7 @@ public class NativeLibrary {
 
         searchPath.addAll(initPaths("jna.library.path"));
         String libraryPath = findLibraryPath(libraryName, searchPath);
-        long handle = 0;
+        Context handle = null;
         //
         // Only search user specified paths first.  This will also fall back
         // to dlopen/LoadLibrary() since findLibraryPath returns the mapped
@@ -197,11 +197,11 @@ public class NativeLibrary {
         }
 
         try {
-            if (handle == 0) {
+            if (handle == null) {
                 libraryPath = findLibraryPath(libraryName, searchPath);
                 LOG.log(DEBUG_LOAD_LEVEL, "Trying " + libraryPath);
                 handle = Native.open(libraryPath, openFlags);
-                if (handle == 0) {
+                if (handle == null) {
                     throw new UnsatisfiedLinkError("Failed to load library '" + libraryName + "'");
                 }
             }
@@ -269,7 +269,7 @@ public class NativeLibrary {
             }
             // As a last resort, try to extract the library from the class
             // path, using the current context class loader.
-            if (handle == 0) {
+            if (handle == null) {
                 try {
                     File embedded = Native.extractFromResourcePath(libraryName, (ClassLoader)options.get(Library.OPTION_CLASSLOADER));
                     try {
@@ -288,7 +288,7 @@ public class NativeLibrary {
                 }
             }
 
-            if (handle == 0) {
+            if (handle == null) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Unable to load library '");
                 sb.append(libraryName);
@@ -626,7 +626,7 @@ public class NativeLibrary {
      * @throws UnsatisfiedLinkError if the symbol can't be found
      */
     long getSymbolAddress(String name) {
-        if (handle == 0) {
+        if (handle == null) {
             throw new UnsatisfiedLinkError("Library has been unloaded");
         }
         return Native.findSymbol(handle, name);
@@ -686,9 +686,9 @@ public class NativeLibrary {
         }
 
         synchronized(this) {
-            if (handle != 0) {
+            if (handle != null) {
                 Native.close(handle);
-                handle = 0;
+                handle = null;
             }
         }
     }
@@ -754,39 +754,7 @@ public class NativeLibrary {
         @param libName base (undecorated) name of library
     */
     static String mapSharedLibraryName(String libName) {
-        if (Platform.isMac()) {
-            if (libName.startsWith("lib")
-                && (libName.endsWith(".dylib")
-                    || libName.endsWith(".jnilib"))) {
-                return libName;
-            }
-            String name = System.mapLibraryName(libName);
-            // On MacOSX, System.mapLibraryName() returns the .jnilib extension
-            // (the suffix for JNI libraries); ordinarily shared libraries have
-            // a .dylib suffix
-            if (name.endsWith(".jnilib")) {
-                return name.substring(0, name.lastIndexOf(".jnilib")) + ".dylib";
-            }
-            return name;
-        }
-        else if (Platform.isLinux() || Platform.isFreeBSD()) {
-            if (isVersionedName(libName) || libName.endsWith(".so")) {
-                // A specific version was requested - use as is for search
-                return libName;
-            }
-        }
-        else if (Platform.isAIX()) {    // can be libx.a, libx.a(shr.o), libx.so
-            if (libName.startsWith("lib")) {
-                return libName;
-            }
-        }
-        else if (Platform.isWindows()) {
-            if (libName.endsWith(".drv") || libName.endsWith(".dll") || libName.endsWith(".ocx")) {
-                return libName;
-            }
-        }
-
-        return System.mapLibraryName(libName);
+        return libName;
     }
 
     private static boolean isVersionedName(String name) {

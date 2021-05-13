@@ -58,13 +58,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.WeakHashMap;
 
 import jp.hisano.jna4wasm.Callback.UncaughtExceptionHandler;
 import jp.hisano.jna4wasm.Structure.FFIType;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.google.common.io.ByteStreams;
 
 /** Provides generation of invocation plumbing for a defined native
  * library interface.  Also provides various utilities for native operations.
@@ -192,24 +194,6 @@ public final class Native implements Version {
     }
 
     static {
-        loadNativeDispatchLibrary();
-
-        if (! isCompatibleVersion(VERSION_NATIVE, getNativeVersion())) {
-            String LS = System.getProperty("line.separator");
-            throw new Error(LS + LS
-                            + "There is an incompatible JNA native library installed on this system" + LS
-                            + "Expected: " + VERSION_NATIVE + LS
-                            + "Found:    " + getNativeVersion() + LS
-                            + (jnidispatchPath != null
-                               ? "(at " + jnidispatchPath + ")" : System.getProperty("java.library.path"))
-                            + "." + LS
-                            + "To resolve this issue you may do one of the following:" + LS
-                            + " - remove or uninstall the offending library" + LS
-                            + " - set the system property jna.nosys=true" + LS
-                            + " - set jna.boot.library.path to include the path to the version of the " + LS
-                            + "   jnidispatch library included with the JNA jar file you are using" + LS);
-        }
-
         POINTER_SIZE = sizeof(TYPE_VOIDP);
         LONG_SIZE = sizeof(TYPE_LONG);
         WCHAR_SIZE = sizeof(TYPE_WCHAR_T);
@@ -217,9 +201,6 @@ public final class Native implements Version {
         BOOL_SIZE = sizeof(TYPE_BOOL);
         LONG_DOUBLE_SIZE = sizeof(TYPE_LONG_DOUBLE);
 
-        // Perform initialization of other JNA classes until *after*
-        // initializing the above final fields
-        initIDs();
         if (Boolean.getBoolean("jna.protected")) {
             setProtected(true);
         }
@@ -277,8 +258,6 @@ public final class Native implements Version {
     }
 
     private Native() { }
-
-    private static native void initIDs();
 
     /** Set whether native memory accesses are protected from invalid
      * accesses.  This should only be set true when testing or debugging,
@@ -909,90 +888,6 @@ public final class Native implements Version {
         return buf;
     }
 
-    /**
-     * Loads the JNA stub library.
-     * First tries jna.boot.library.path, then the system path, then from the
-     * jar file.
-     */
-    private static void loadNativeDispatchLibrary() {
-        if (!Boolean.getBoolean("jna.nounpack")) {
-            try {
-                removeTemporaryFiles();
-            }
-            catch(IOException e) {
-                LOG.log(Level.WARNING, "JNA Warning: IOException removing temporary files", e);
-            }
-        }
-
-        String libName = System.getProperty("jna.boot.library.name", "jnidispatch");
-        String bootPath = System.getProperty("jna.boot.library.path");
-        if (bootPath != null) {
-            // String.split not available in 1.4
-            StringTokenizer dirs = new StringTokenizer(bootPath, File.pathSeparator);
-            while (dirs.hasMoreTokens()) {
-                String dir = dirs.nextToken();
-                File file = new File(new File(dir), System.mapLibraryName(libName).replace(".dylib", ".jnilib"));
-                String path = file.getAbsolutePath();
-                LOG.log(DEBUG_JNA_LOAD_LEVEL, "Looking in {0}", path);
-                if (file.exists()) {
-                    try {
-                        LOG.log(DEBUG_JNA_LOAD_LEVEL, "Trying {0}", path);
-                        System.setProperty("jnidispatch.path", path);
-                        System.load(path);
-                        jnidispatchPath = path;
-                        LOG.log(DEBUG_JNA_LOAD_LEVEL, "Found jnidispatch at {0}", path);
-                        return;
-                    } catch (UnsatisfiedLinkError ex) {
-                        // Not a problem if already loaded in anoteher class loader
-                        // Unfortunately we can't distinguish the difference...
-                        //System.out.println("File found at " + file + " but not loadable: " + ex.getMessage());
-                    }
-                }
-                if (Platform.isMac()) {
-                    String orig, ext;
-                    if (path.endsWith("dylib")) {
-                        orig = "dylib";
-                        ext = "jnilib";
-                    } else {
-                        orig = "jnilib";
-                        ext = "dylib";
-                    }
-                    path = path.substring(0, path.lastIndexOf(orig)) + ext;
-                    LOG.log(DEBUG_JNA_LOAD_LEVEL, "Looking in {0}", path);
-                    if (new File(path).exists()) {
-                        try {
-                            LOG.log(DEBUG_JNA_LOAD_LEVEL, "Trying {0}", path);
-                            System.setProperty("jnidispatch.path", path);
-                            System.load(path);
-                            jnidispatchPath = path;
-                            LOG.log(DEBUG_JNA_LOAD_LEVEL, "Found jnidispatch at {0}", path);
-                            return;
-                        } catch (UnsatisfiedLinkError ex) {
-                            LOG.log(Level.WARNING, "File found at " + path + " but not loadable: " + ex.getMessage(), ex);
-                        }
-                    }
-                }
-            }
-        }
-        String jnaNosys = System.getProperty("jna.nosys", "true");
-        if ((!Boolean.parseBoolean(jnaNosys)) || Platform.isAndroid()) {
-            try {
-                LOG.log(DEBUG_JNA_LOAD_LEVEL, "Trying (via loadLibrary) {0}", libName);
-                System.loadLibrary(libName);
-                LOG.log(DEBUG_JNA_LOAD_LEVEL, "Found jnidispatch on system path");
-                return;
-            }
-            catch(UnsatisfiedLinkError e) {
-            }
-        }
-        if (!Boolean.getBoolean("jna.noclasspath")) {
-            loadNativeDispatchLibraryFromClasspath();
-        }
-        else {
-            throw new UnsatisfiedLinkError("Unable to locate JNA native support library");
-        }
-    }
-
     static final String JNA_TMPLIB_PREFIX = "jna";
     /**
      * Attempts to load the native library resource from the filesystem,
@@ -1174,10 +1069,24 @@ public final class Native implements Version {
      * Initialize field and method IDs for native methods of this class.
      * Returns the size of a native pointer.
      **/
-    private static native int sizeof(int type);
-
-    private static native String getNativeVersion();
-    private static native String getAPIChecksum();
+    private static int sizeof(int type) {
+        switch (type) {
+            case TYPE_VOIDP:
+                return 4;
+            case TYPE_LONG:
+                return 4;
+            case TYPE_WCHAR_T:
+                return 4;
+            case TYPE_SIZE_T:
+                return 4;
+            case TYPE_BOOL:
+                return 4;
+            case TYPE_LONG_DOUBLE:
+                return 8;
+            default:
+                throw new IllegalArgumentException(String.format("Invalid size of type %d", type));
+        }
+    }
 
     /** Retrieve last error set by the OS.  This corresponds to
      * <code>GetLastError()</code> on Windows, and <code>errno</code> on
@@ -1996,8 +1905,6 @@ public final class Native implements Version {
             ? pkg.getImplementationVersion() : DEFAULT_BUILD;
         if (version == null) version = DEFAULT_BUILD;
         System.out.println("Version: " + version);
-        System.out.println(" Native: " + getNativeVersion() + " ("
-                           + getAPIChecksum() + ")");
         System.out.println(" Prefix: " + Platform.RESOURCE_PREFIX);
     }
 
@@ -2030,7 +1937,9 @@ public final class Native implements Version {
      *
      * @return The value returned by the target native function
      */
-    static  native int invokeInt(Function function, long fp, int callFlags, Object[] args);
+    static int invokeInt(Function function, String fp, int callFlags, Object[] args) {
+        return ((Number)invoke(fp, args)).intValue();
+    }
 
     /**
      * Call the native function.
@@ -2054,7 +1963,13 @@ public final class Native implements Version {
      * @param callFlags calling convention to be used
      * @param args      Arguments to pass to the native function
      */
-    static native void invokeVoid(Function function, long fp, int callFlags, Object[] args);
+    static void invokeVoid(Function function, String fp, int callFlags, Object[] args) {
+        invoke(fp, args);
+    }
+
+    static Object invoke(String fp, Object[] args) {
+        return NativeLibrary.handle.invokeFunction(fp, args);
+    }
 
     /**
      * Call the native function.
@@ -2093,7 +2008,9 @@ public final class Native implements Version {
      *
      * @return The value returned by the target native function
      */
-    static native long invokePointer(Function function, long fp, int callFlags, Object[] args);
+    static long invokePointer(Function function, String fp, int callFlags, Object[] args) {
+        return ((Number)invoke(fp, args)).intValue();
+    }
 
     /**
      * Call the native function, returning a struct by value.
@@ -2104,7 +2021,7 @@ public final class Native implements Version {
      * @param callFlags calling convention to be used
      * @param args      Arguments to pass to the native function
      * @param memory    Memory for pre-allocated structure to hold the result
-     * @param typeInfo  Native type information for the Structure
+     * @param type_info  Native type information for the Structure
      */
     private static native void invokeStructure(Function function, long fp, int callFlags,
                                                Object[] args, long memory,
@@ -2141,20 +2058,26 @@ public final class Native implements Version {
      */
     static native Object invokeObject(Function function, long fp, int callFlags, Object[] args);
 
-    /** Open the requested native library with default options. */
-    static long open(String name) {
-        return open(name, -1);
-    }
-
     /** Open the requested native library with the specified platform-specific
      * otions.
      */
-    static native long open(String name, int flags);
+    static Context open(String name, int flags) {
+        Context context = Context.get();
+        try {
+            byte[] wasmBytes = ByteStreams.toByteArray(Native.class.getResourceAsStream("/" + name));
+            context.load(wasmBytes);
+        } catch (IOException e) {
+            throw new IllegalArgumentException();
+        }
+        return context;
+    }
 
     /** Close the given native library. */
-    static native void close(long handle);
+    static void close(Context handle) {
+        handle.dispose();
+    }
 
-    static native long findSymbol(long handle, String name);
+    static native long findSymbol(Context handle, String name);
 
     /*
     ============================================================================
@@ -2286,14 +2209,18 @@ public final class Native implements Version {
      * @return native address of the allocated memory block; zero if the
      * allocation failed.
      */
-    public static native long malloc(long size);
+    public static long malloc(long size) {
+        return Context.get().malloc((int) size);
+    }
 
     /**
      * Call the real native free
      * @param ptr native address to be freed; a value of zero has no effect,
      * passing an already-freed pointer will cause pain.
      */
-    public static native void free(long ptr);
+    public static void free(long ptr) {
+        Context.get().free((int) ptr);
+    }
 
     private static final ThreadLocal<Memory> nativeThreadTerminationFlag =
         new ThreadLocal<Memory>() {

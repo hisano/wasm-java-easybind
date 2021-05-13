@@ -29,6 +29,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -254,7 +255,8 @@ public class Pointer {
      *               copied
      */
     public void write(long offset, byte[] buf, int index, int length) {
-        Native.write(this, this.peer, offset, buf, index, length);
+        byte[] array = Arrays.copyOfRange(buf, index, index + length);
+        Context.get().write((int) offset, array);
     }
 
     /**
@@ -990,7 +992,7 @@ public class Pointer {
      * @param value <code>byte</code> value to set
      */
     public void setByte(long offset, byte value) {
-        Native.setByte(this, this.peer, offset, value);
+        Context.get().write((int) offset, new byte[]{value});
     }
 
     /**
