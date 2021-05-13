@@ -2384,13 +2384,19 @@ public final class Native implements Version {
         }
     }
 
-    static native void read(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length);
+    static void read(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length) {
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        for (int i = 0; i < length; i++) {
+            buf[index + i] = getShort(pointer, baseaddr + offset + i * 2, 0);
+        }
+    }
 
     static void read(Pointer pointer, long baseaddr, long offset, char[] buf, int index, int length) {
         ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
         buffer.position((int) (baseaddr + offset));
         for (int i = 0; i < length; i++) {
-            buf[index + i] = getChar(pointer,baseaddr + offset + i * 2, 0);
+            buf[index + i] = getChar(pointer, baseaddr + offset + i * 2, 0);
         }
     }
 
@@ -2420,7 +2426,11 @@ public final class Native implements Version {
         byteBuffer.put(Arrays.copyOfRange(buf, index, index + length));
     }
 
-    static native void write(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length) {
+        for (int i = 0; i < length; i++) {
+            setShort(pointer, baseaddr + offset + i * 2, 0, buf[index + i]);
+        }
+    }
 
     static void write(Pointer pointer, long baseaddr, long offset, char[] buf, int index, int length) {
         for (int i = 0; i < length; i++) {
