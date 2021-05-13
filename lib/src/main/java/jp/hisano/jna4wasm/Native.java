@@ -28,6 +28,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.Window;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -2062,14 +2063,32 @@ public final class Native implements Version {
      * otions.
      */
     static Context open(String name, int flags) {
-        Context context = Context.get();
-        try {
-            byte[] wasmBytes = ByteStreams.toByteArray(Native.class.getResourceAsStream("/" + name));
-            context.load(wasmBytes);
+        try (InputStream in = openInputStream(name)){
+            if (in == null) {
+                throw new UnsatisfiedLinkError();
+            }
+            
+            byte[] wasmBytes = ByteStreams.toByteArray(in);
+
+            Context context = Context.get();
+            context.loadBinary(wasmBytes);
+            return context;
         } catch (IOException e) {
-            throw new IllegalArgumentException();
+            throw new UnsatisfiedLinkError();
         }
-        return context;
+    }
+
+    private static InputStream openInputStream(String name) throws IOException {
+        InputStream result = Native.class.getResourceAsStream("/" + name);
+        if (result != null) {
+            return result;
+        }
+
+        File file = new File(name);
+        if (!file.exists()) {
+            return null;
+        }
+        return new FileInputStream(file);
     }
 
     /** Close the given native library. */

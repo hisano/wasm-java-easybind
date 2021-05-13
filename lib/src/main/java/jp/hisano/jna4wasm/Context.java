@@ -35,7 +35,7 @@ public final class Context implements Disposable {
 		wasi.addToLinker(_linker);
 	}
 
-	public void load(byte[] wasmBytes) {
+	void loadBinary(byte[] wasmBytes) {
 		_linker.module("", Module.fromBinary(_store.engine(), wasmBytes));
 		_memory = _linker.getOneByName("", "memory").memory();
 		_malloc = _linker.getOneByName("", "malloc").func();
