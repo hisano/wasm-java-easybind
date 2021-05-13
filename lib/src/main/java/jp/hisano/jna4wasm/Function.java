@@ -418,11 +418,11 @@ public class Function extends Pointer {
         } else if (returnType==int.class || returnType==Integer.class) {
             result = Integer.valueOf(Native.invokeInt(this, this.functionName, callFlags, args));
         } else if (returnType==long.class || returnType==Long.class) {
-            result = Long.valueOf(Native.invokeLong(this, this.peer, callFlags, args));
+            result = Long.valueOf(Native.invokeLong(this, this.functionName, callFlags, args));
         } else if (returnType==float.class || returnType==Float.class) {
-            result = Float.valueOf(Native.invokeFloat(this, this.peer, callFlags, args));
+            result = Float.valueOf(Native.invokeFloat(this, this.functionName, callFlags, args));
         } else if (returnType==double.class || returnType==Double.class) {
-            result = Double.valueOf(Native.invokeDouble(this, this.peer, callFlags, args));
+            result = Double.valueOf(Native.invokeDouble(this, this.functionName, callFlags, args));
         } else if (returnType==String.class) {
             result = invokeString(callFlags, args, false);
         } else if (returnType==WString.class) {

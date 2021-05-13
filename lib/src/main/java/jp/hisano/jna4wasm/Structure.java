@@ -789,7 +789,7 @@ public abstract class Structure {
 
         // Update native FFI type information, if needed
         if (this instanceof ByValue) {
-            getTypeInfo();
+//            getTypeInfo();
         }
 
         // Avoid redundant writes
@@ -1390,7 +1390,7 @@ public abstract class Structure {
             int size = addPadding(calculatedSize, info.alignment);
             // Update native FFI type information, if needed
             if (this instanceof ByValue && !avoidFFIType) {
-                getTypeInfo();
+//                getTypeInfo();
             }
             info.size = size;
             return info;

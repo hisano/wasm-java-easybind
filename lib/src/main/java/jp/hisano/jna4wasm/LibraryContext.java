@@ -153,14 +153,24 @@ public final class LibraryContext implements Disposable {
 				return Val.fromI32(((Boolean)argument)? 1: 0);
 			} else if (argument instanceof Byte) {
 				return Val.fromI32(((Byte)argument).byteValue());
+			} else if (argument instanceof Character) {
+				return Val.fromI32((Character)argument);
 			} else if (argument instanceof Short) {
 				return Val.fromI32(((Short)argument).shortValue());
 			} else if (argument instanceof Integer) {
 				return Val.fromI32(((Integer) argument).intValue());
+			} else if (argument instanceof Long) {
+				return Val.fromI64(((Long) argument).longValue());
+			} else if (argument instanceof Float) {
+				return Val.fromF32(((Float) argument).floatValue());
+			} else if (argument instanceof Double) {
+				return Val.fromF64(((Double) argument).doubleValue());
 			} else if (argument instanceof Pointer) {
-				return Val.fromI32((int) ((Pointer)argument).peer);
+				return Val.fromI32((int) ((Pointer) argument).peer);
+			} else if (argument == null){
+				return Val.fromI32(0);
 			} else {
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException(argument.getClass() + " is not supported");
 			}
 		}).toArray(Val[]::new);
 	}
