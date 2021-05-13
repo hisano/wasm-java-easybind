@@ -85,7 +85,7 @@ public class NativeLibrary {
     private static final Logger LOG = Logger.getLogger(NativeLibrary.class.getName());
     private final static Level DEBUG_LOAD_LEVEL = Native.DEBUG_LOAD ? Level.INFO : Level.FINE;
 
-    static Context handle;
+    static LibraryContext handle;
     private final String libraryName;
     private final String libraryPath;
     private final Map<String, Function> functions = new HashMap<String, Function>();
@@ -107,7 +107,7 @@ public class NativeLibrary {
         return name + "|" + flags + "|" + encoding;
     }
 
-    private NativeLibrary(String libraryName, String libraryPath, Context handle, Map<String, ?> options) {
+    private NativeLibrary(String libraryName, String libraryPath, LibraryContext handle, Map<String, ?> options) {
         this.libraryName = getLibraryName(libraryName);
         this.libraryPath = libraryPath;
         this.handle = handle;
@@ -179,7 +179,7 @@ public class NativeLibrary {
 
         searchPath.addAll(initPaths("jna.library.path"));
         String libraryPath = findLibraryPath(libraryName, searchPath);
-        Context handle = null;
+        LibraryContext handle = null;
         //
         // Only search user specified paths first.  This will also fall back
         // to dlopen/LoadLibrary() since findLibraryPath returns the mapped

@@ -2062,7 +2062,7 @@ public final class Native implements Version {
     /** Open the requested native library with the specified platform-specific
      * otions.
      */
-    static Context open(String name, int flags) {
+    static LibraryContext open(String name, int flags) {
         try (InputStream in = openInputStream(name)){
             if (in == null) {
                 throw new UnsatisfiedLinkError();
@@ -2070,7 +2070,7 @@ public final class Native implements Version {
             
             byte[] wasmBytes = ByteStreams.toByteArray(in);
 
-            Context context = Context.get();
+            LibraryContext context = LibraryContext.get();
             context.loadBinary(wasmBytes);
             return context;
         } catch (IOException e) {
@@ -2092,11 +2092,11 @@ public final class Native implements Version {
     }
 
     /** Close the given native library. */
-    static void close(Context handle) {
+    static void close(LibraryContext handle) {
         handle.dispose();
     }
 
-    static native long findSymbol(Context handle, String name);
+    static native long findSymbol(LibraryContext handle, String name);
 
     /*
     ============================================================================
@@ -2146,7 +2146,7 @@ public final class Native implements Version {
     static native void read(Pointer pointer, long baseaddr, long offset, double[] buf, int index, int length);
 
     static void write(Pointer pointer, long baseaddr, long offset, byte[] buf, int index, int length) {
-        ByteBuffer byteBuffer = Context.get().getMemoryBuffer();
+        ByteBuffer byteBuffer = LibraryContext.get().getMemoryBuffer();
         byteBuffer.position((int)(baseaddr + offset));
         byteBuffer.put(Arrays.copyOfRange(buf, index, index + length));
     }
@@ -2207,7 +2207,7 @@ public final class Native implements Version {
     static native void setMemory(Pointer pointer, long baseaddr, long offset, long length, byte value);
 
     static void setByte(Pointer pointer, long baseaddr, long offset, byte value) {
-        Context.get().getMemoryBuffer().put((int) (baseaddr + offset), value);
+        LibraryContext.get().getMemoryBuffer().put((int) (baseaddr + offset), value);
     }
 
     static native void setShort(Pointer pointer, long baseaddr, long offset, short value);
@@ -2235,7 +2235,7 @@ public final class Native implements Version {
      * allocation failed.
      */
     public static long malloc(long size) {
-        return (Integer)Context.get().invokeFunction("malloc", (int) size);
+        return (Integer) LibraryContext.get().invokeFunction("malloc", (int) size);
     }
 
     /**
@@ -2244,7 +2244,7 @@ public final class Native implements Version {
      * passing an already-freed pointer will cause pain.
      */
     public static void free(long ptr) {
-        Context.get().invokeFunction("free", (int) ptr);
+        LibraryContext.get().invokeFunction("free", (int) ptr);
     }
 
     private static final ThreadLocal<Memory> nativeThreadTerminationFlag =

@@ -1,5 +1,6 @@
 package jp.hisano.jna4wasm;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
@@ -16,6 +17,11 @@ public class LibraryTest {
 			Hello hello = Native.load("hello.wasm", Hello.class);
 			hello.hello2("World");
 		});
+	}
+
+	@AfterEach
+	public void tearDown() {
+		LibraryContext.get().dispose();
 	}
 
 	public interface Hello extends Library {
