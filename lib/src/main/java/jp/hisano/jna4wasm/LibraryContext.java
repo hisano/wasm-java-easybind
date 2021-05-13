@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 import io.github.kawamuray.wasmtime.Disposable;
+import io.github.kawamuray.wasmtime.Extern;
 import io.github.kawamuray.wasmtime.Func;
 import io.github.kawamuray.wasmtime.Linker;
 import io.github.kawamuray.wasmtime.Memory;
@@ -38,14 +39,36 @@ public final class LibraryContext implements Disposable {
 	private LibraryContext() {
 	}
 
-	synchronized void loadBinary(byte[] wasmBytes) {
-		requireDisposed();
+	synchronized Store getStore() {
+		lateInit();
+
+		return _store;
+	}
+
+	synchronized void defineFunction(String functionName, Func function) {
+		defineFunction("env", functionName, addResource(function));
+	}
+
+	synchronized void defineFunction(String moduleName, String functionName, Func function) {
+		lateInit();
+
+		_linker.define(moduleName, functionName, Extern.fromFunc(function));
+	}
+
+	private void lateInit() {
+		if (_store != null) {
+			return;
+		}
 
 		_store = addResource(new Store());
 		_linker = addResource(new Linker(_store));
 
 		Wasi wasi = addResource(new Wasi(_store, new WasiConfig(new String[0], new WasiConfig.PreopenDir[0])));
 		wasi.addToLinker(_linker);
+	}
+
+	synchronized void loadBinary(byte[] wasmBytes) {
+		lateInit();
 
 		_linker.module("", addResource(Module.fromBinary(_store.engine(), wasmBytes)));
 		_memory = addResource(_linker.getOneByName("", "memory").memory());
