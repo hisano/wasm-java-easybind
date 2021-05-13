@@ -2439,7 +2439,9 @@ public final class Native implements Version {
     }
 
     static int getInt(Pointer pointer, long baseaddr, long offset) {
-        return LibraryContext.get().getMemoryBuffer().getInt((int) (baseaddr + offset));
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        return (short) ((buffer.get() & 0xFF) | ((buffer.get() & 0xFF) << 8) | ((buffer.get() & 0xFF) << 16) | ((buffer.get() & 0xFF) << 24));
     }
 
     static long getLong(Pointer pointer, long baseaddr, long offset) {
@@ -2525,7 +2527,12 @@ public final class Native implements Version {
     }
 
     static void setInt(Pointer pointer, long baseaddr, long offset, int value) {
-        LibraryContext.get().getMemoryBuffer().putInt((int) (baseaddr + offset), value);
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        buffer.put((byte)value);
+        buffer.put((byte)(value >>> 8));
+        buffer.put((byte)(value >>> 16));
+        buffer.put((byte)(value >>> 24));
     }
 
     static void setLong(Pointer pointer, long baseaddr, long offset, long value) {
