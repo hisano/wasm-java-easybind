@@ -10,6 +10,16 @@ import static org.assertj.core.api.Assertions.*;
 
 public class LibraryTest {
 	@Test
+	public void testAdd() {
+		Add add = Native.load("add.wasm", Add.class);
+		assertThat(add.add(1, 2)).isEqualTo(3);
+	}
+
+	public interface Add extends Library {
+		int add(int a, int b);
+	}
+
+	@Test
 	public void testNoLibrary() {
 		assertThatExceptionOfType(UnsatisfiedLinkError.class).isThrownBy(() -> Native.load("no.wasm", Library.class));
 	}
