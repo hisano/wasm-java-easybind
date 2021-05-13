@@ -23,6 +23,7 @@ public final class Context implements Disposable {
 	private final Linker _linker;
 
 	private Memory _memory;
+	private ByteBuffer _memoryBuffer;
 
 	private Context() {
 		_store = new Store();
@@ -34,6 +35,7 @@ public final class Context implements Disposable {
 	void loadBinary(byte[] wasmBytes) {
 		_linker.module("", Module.fromBinary(_store.engine(), wasmBytes));
 		_memory = _linker.getOneByName("", "memory").memory();
+		_memoryBuffer = _memory.buffer();
 	}
 
 	Object invokeFunction(String functionName, Object... arguments) {
@@ -79,10 +81,8 @@ public final class Context implements Disposable {
 		}).toArray(Val[]::new);
 	}
 
-	void write(int address, byte[] array) {
-		ByteBuffer buffer = _memory.buffer();
-		buffer.position(address);
-		buffer.put(array);
+	ByteBuffer getMemoryBuffer() {
+		return _memoryBuffer;
 	}
 
 	public void dispose() {

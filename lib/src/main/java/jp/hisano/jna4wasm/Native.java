@@ -2145,7 +2145,11 @@ public final class Native implements Version {
 
     static native void read(Pointer pointer, long baseaddr, long offset, double[] buf, int index, int length);
 
-    static native void write(Pointer pointer, long baseaddr, long offset, byte[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, byte[] buf, int index, int length) {
+        ByteBuffer byteBuffer = Context.get().getMemoryBuffer();
+        byteBuffer.position((int)(baseaddr + offset));
+        byteBuffer.put(Arrays.copyOfRange(buf, index, index + length));
+    }
 
     static native void write(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length);
 
@@ -2202,7 +2206,9 @@ public final class Native implements Version {
 
     static native void setMemory(Pointer pointer, long baseaddr, long offset, long length, byte value);
 
-    static native void setByte(Pointer pointer, long baseaddr, long offset, byte value);
+    static void setByte(Pointer pointer, long baseaddr, long offset, byte value) {
+        Context.get().getMemoryBuffer().put((int) (baseaddr + offset), value);
+    }
 
     static native void setShort(Pointer pointer, long baseaddr, long offset, short value);
 

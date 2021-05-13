@@ -255,8 +255,7 @@ public class Pointer {
      *               copied
      */
     public void write(long offset, byte[] buf, int index, int length) {
-        byte[] array = Arrays.copyOfRange(buf, index, index + length);
-        Context.get().write((int)(peer + offset), array);
+        Native.write(this, this.peer, offset, buf, index, length);
     }
 
     /**
@@ -992,7 +991,7 @@ public class Pointer {
      * @param value <code>byte</code> value to set
      */
     public void setByte(long offset, byte value) {
-        Context.get().write((int)(peer + offset), new byte[]{value});
+        Native.setByte(this, this.peer, offset, value);
     }
 
     /**
