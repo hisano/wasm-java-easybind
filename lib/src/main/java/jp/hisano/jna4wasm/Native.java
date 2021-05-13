@@ -2229,7 +2229,7 @@ public final class Native implements Version {
      * allocation failed.
      */
     public static long malloc(long size) {
-        return Context.get().malloc((int) size);
+        return (Integer)Context.get().invokeFunction("malloc", (int) size);
     }
 
     /**
@@ -2238,7 +2238,7 @@ public final class Native implements Version {
      * passing an already-freed pointer will cause pain.
      */
     public static void free(long ptr) {
-        Context.get().free((int) ptr);
+        Context.get().invokeFunction("free", (int) ptr);
     }
 
     private static final ThreadLocal<Memory> nativeThreadTerminationFlag =

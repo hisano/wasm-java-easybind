@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 import io.github.kawamuray.wasmtime.Disposable;
-import io.github.kawamuray.wasmtime.Func;
 import io.github.kawamuray.wasmtime.Linker;
 import io.github.kawamuray.wasmtime.Memory;
 import io.github.kawamuray.wasmtime.Module;
@@ -25,9 +24,6 @@ public final class Context implements Disposable {
 
 	private Memory _memory;
 
-	private Func _malloc;
-	private Func _free;
-
 	private Context() {
 		_store = new Store();
 		_linker = new Linker(_store);
@@ -38,12 +34,10 @@ public final class Context implements Disposable {
 	void loadBinary(byte[] wasmBytes) {
 		_linker.module("", Module.fromBinary(_store.engine(), wasmBytes));
 		_memory = _linker.getOneByName("", "memory").memory();
-		_malloc = _linker.getOneByName("", "malloc").func();
-		_free = _linker.getOneByName("", "free").func();
 	}
 
-	public Object invokeFunction(String fp, Object[] args) {
-		Val[] results = _linker.getOneByName("", fp).func().call(convertToVal(args));
+	Object invokeFunction(String functionName, Object... arguments) {
+		Val[] results = _linker.getOneByName("", functionName).func().call(convertToVal(arguments));
 
 		if (results.length == 0) {
 			return null;
@@ -67,8 +61,8 @@ public final class Context implements Disposable {
 		}
 	}
 
-	private Val[] convertToVal(Object[] args) {
-		return Stream.of(args).map(argument -> {
+	private Val[] convertToVal(Object... arguments) {
+		return Stream.of(arguments).map(argument -> {
 			if (argument instanceof Boolean) {
 				return Val.fromI32(((Boolean)argument)? 1: 0);
 			} else if (argument instanceof Byte) {
@@ -85,15 +79,7 @@ public final class Context implements Disposable {
 		}).toArray(Val[]::new);
 	}
 
-	public int malloc(int size) {
-		return _malloc.call(Val.fromI32(size))[0].i32();
-	}
-
-	public void free(int ptr) {
-		_free.call(Val.fromI32(ptr));
-	}
-
-	public void write(int address, byte[] array) {
+	void write(int address, byte[] array) {
 		ByteBuffer buffer = _memory.buffer();
 		buffer.position(address);
 		buffer.put(array);
