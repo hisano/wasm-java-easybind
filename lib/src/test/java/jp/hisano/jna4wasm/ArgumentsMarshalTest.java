@@ -664,12 +664,12 @@ public class ArgumentsMarshalTest extends TestCase {
         assertNotNull("Callback field not set", s.cb);
     }
 
-    public void testCallProxiedFunctionPointer() {
-        TestLibrary.CbStruct s = new TestLibrary.CbStruct();
-        lib.setCallbackInStruct(s);
-        assertEquals("Proxy to native function pointer failed: " + s.cb,
-                     3, s.cb.callback(1, 2));
-    }
+//    public void testCallProxiedFunctionPointer() {
+//        TestLibrary.CbStruct s = new TestLibrary.CbStruct();
+//        lib.setCallbackInStruct(s);
+//        assertEquals("Proxy to native function pointer failed: " + s.cb,
+//                     3, s.cb.callback(1, 2));
+//    }
 
     public void testVariableSizedStructureArgument() {
         String EXPECTED = getName();
