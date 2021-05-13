@@ -874,8 +874,6 @@ fillDoubleBuffer(double *buf, int len, double value) {
   return len;
 }
 
-#include "ffi.h"
-
 EXPORT int32_t
 addVarArgs(const char *fmt, ...) {
   va_list ap;
@@ -1032,30 +1030,6 @@ callManyArgsStdCallCallback(void (__stdcall *func)(long,int,double,
 }
 
 #endif /* _WIN32 && !_WIN64 */
-
-#include <jni.h>
-#include <math.h>
-#include <sys/types.h>
-#include "dispatch.h"
-JNIEXPORT jdouble JNICALL
-Java_com_sun_jna_PerformanceTest_00024JNILibrary_cos(JNIEnv *UNUSED(env), jclass UNUSED(cls), jdouble x) {
-  return cos(x);
-}
-
-JNIEXPORT jint JNICALL
-Java_com_sun_jna_PerformanceTest_00024JNILibrary_getpid(JNIEnv *UNUSED(env), jclass UNUSED(cls)) {
-#ifdef _WIN32
-  extern int _getpid();
-  return _getpid();
-#else
-  return getpid();
-#endif
-}
-
-EXPORT jclass
-returnClass(JNIEnv *env, jobject arg) {
-  return (*env)->GetObjectClass(env, arg);
-}
 
 #ifdef __cplusplus
 }
