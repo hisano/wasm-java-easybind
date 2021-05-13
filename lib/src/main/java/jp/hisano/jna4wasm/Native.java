@@ -2402,7 +2402,13 @@ public final class Native implements Version {
         }
     }
 
-    static native void read(Pointer pointer, long baseaddr, long offset, long[] buf, int index, int length);
+    static void read(Pointer pointer, long baseaddr, long offset, long[] buf, int index, int length) {
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        for (int i = 0; i < length; i++) {
+            buf[index + i] = getLong(pointer,baseaddr + offset + i * 8, 0);
+        }
+    }
 
     static native void read(Pointer pointer, long baseaddr, long offset, float[] buf, int index, int length);
 
@@ -2429,7 +2435,11 @@ public final class Native implements Version {
     }
 
 
-    static native void write(Pointer pointer, long baseaddr, long offset, long[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, long[] buf, int index, int length) {
+        for (int i = 0; i < length; i++) {
+            setLong(pointer, baseaddr + offset + i * 8, 0, buf[index + i]);
+        }
+    }
 
     static native void write(Pointer pointer, long baseaddr, long offset, float[] buf, int index, int length);
 
@@ -2456,7 +2466,7 @@ public final class Native implements Version {
     }
 
     static long getLong(Pointer pointer, long baseaddr, long offset) {
-        return LibraryContext.get().getMemoryBuffer().getLong((int) (baseaddr + offset));
+        return (getInt(pointer, baseaddr, offset) & 0xFFFFFFFFL) | (((getInt(pointer, baseaddr, offset + 4) & 0xFFFFFFFFL) << 32));
     }
 
     static float getFloat(Pointer pointer, long baseaddr, long offset) {
@@ -2547,7 +2557,8 @@ public final class Native implements Version {
     }
 
     static void setLong(Pointer pointer, long baseaddr, long offset, long value) {
-        LibraryContext.get().getMemoryBuffer().putLong((int) (baseaddr + offset), value);
+        setInt(pointer, baseaddr, offset, (int) value);
+        setInt(pointer, baseaddr, offset + 4, (int)(value >> 32));
     }
 
     static void setFloat(Pointer pointer, long baseaddr, long offset, float value) {
