@@ -9,6 +9,11 @@ import io.github.kawamuray.wasmtime.WasmValType;
 import static org.assertj.core.api.Assertions.*;
 
 public class LibraryTest {
+	@AfterEach
+	public void tearDown() {
+		LibraryContext.get().dispose();
+	}
+
 	@Test
 	public void testAdd() {
 		Add add = Native.load("add.wasm", Add.class);
@@ -32,6 +37,10 @@ public class LibraryTest {
 		});
 	}
 
+	public interface Hello extends Library {
+		void hello2(String name);
+	}
+
 	@Test
 	public void testDependentReturnFalse() {
 		LibraryContext context = LibraryContext.get();
@@ -43,15 +52,6 @@ public class LibraryTest {
 
 		TestLib2 testLib2 = Native.load("testlib2.wasm", TestLib2.class);
 		assertThat(testLib2.dependentReturnFalse()).isFalse();
-	}
-
-	@AfterEach
-	public void tearDown() {
-		LibraryContext.get().dispose();
-	}
-
-	public interface Hello extends Library {
-		void hello2(String name);
 	}
 
 	public interface TestLib2 extends  Library {
