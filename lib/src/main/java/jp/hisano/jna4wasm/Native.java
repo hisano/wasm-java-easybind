@@ -2394,7 +2394,13 @@ public final class Native implements Version {
         }
     }
 
-    static native void read(Pointer pointer, long baseaddr, long offset, int[] buf, int index, int length);
+    static void read(Pointer pointer, long baseaddr, long offset, int[] buf, int index, int length) {
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        for (int i = 0; i < length; i++) {
+            buf[index + i] = getInt(pointer,baseaddr + offset + i * 4, 0);
+        }
+    }
 
     static native void read(Pointer pointer, long baseaddr, long offset, long[] buf, int index, int length);
 
@@ -2416,7 +2422,12 @@ public final class Native implements Version {
         }
     }
 
-    static native void write(Pointer pointer, long baseaddr, long offset, int[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, int[] buf, int index, int length) {
+        for (int i = 0; i < length; i++) {
+            setInt(pointer, baseaddr + offset + i * 4, 0, buf[index + i]);
+        }
+    }
+
 
     static native void write(Pointer pointer, long baseaddr, long offset, long[] buf, int index, int length);
 
@@ -2441,7 +2452,7 @@ public final class Native implements Version {
     static int getInt(Pointer pointer, long baseaddr, long offset) {
         ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
         buffer.position((int) (baseaddr + offset));
-        return (short) ((buffer.get() & 0xFF) | ((buffer.get() & 0xFF) << 8) | ((buffer.get() & 0xFF) << 16) | ((buffer.get() & 0xFF) << 24));
+        return (buffer.get() & 0xFF) | ((buffer.get() & 0xFF) << 8) | ((buffer.get() & 0xFF) << 16) | ((buffer.get() & 0xFF) << 24);
     }
 
     static long getLong(Pointer pointer, long baseaddr, long offset) {
