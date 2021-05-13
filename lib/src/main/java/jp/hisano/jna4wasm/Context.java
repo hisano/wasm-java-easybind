@@ -43,7 +43,13 @@ public final class Context implements Disposable {
 	}
 
 	public Object invokeFunction(String fp, Object[] args) {
-		return convertFromVal(_linker.getOneByName("", fp).func().call(convertToVal(args))[0]);
+		Val[] results = _linker.getOneByName("", fp).func().call(convertToVal(args));
+
+		if (results.length == 0) {
+			return null;
+		}
+
+		return convertFromVal(results[0]);
 	}
 
 	private Object convertFromVal(Val result) {
@@ -87,9 +93,9 @@ public final class Context implements Disposable {
 		_free.call(Val.fromI32(ptr));
 	}
 
-	public void write(int offset, byte[] array) {
+	public void write(int address, byte[] array) {
 		ByteBuffer buffer = _memory.buffer();
-		buffer.position(offset);
+		buffer.position(address);
 		buffer.put(array);
 	}
 
