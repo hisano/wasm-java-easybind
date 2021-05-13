@@ -9,6 +9,7 @@ import io.github.kawamuray.wasmtime.Memory;
 import io.github.kawamuray.wasmtime.Module;
 import io.github.kawamuray.wasmtime.Store;
 import io.github.kawamuray.wasmtime.Val;
+import io.github.kawamuray.wasmtime.WasmtimeException;
 import io.github.kawamuray.wasmtime.wasi.Wasi;
 import io.github.kawamuray.wasmtime.wasi.WasiConfig;
 
@@ -39,7 +40,12 @@ public final class Context implements Disposable {
 	}
 
 	Object invokeFunction(String functionName, Object... arguments) {
-		Val[] results = _linker.getOneByName("", functionName).func().call(convertToVal(arguments));
+		Val[] results;
+		try {
+			results = _linker.getOneByName("", functionName).func().call(convertToVal(arguments));
+		} catch (WasmtimeException e) {
+			throw new UnsatisfiedLinkError();
+		}
 
 		if (results.length == 0) {
 			return null;
