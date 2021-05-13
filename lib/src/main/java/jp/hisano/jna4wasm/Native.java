@@ -2063,6 +2063,10 @@ public final class Native implements Version {
      * otions.
      */
     static LibraryContext open(String name, int flags) {
+        if (!name.endsWith(".wasm")) {
+            name += ".wasm";
+        }
+
         try (InputStream in = openInputStream(name)){
             if (in == null) {
                 throw new UnsatisfiedLinkError();
