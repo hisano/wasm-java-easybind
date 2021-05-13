@@ -2435,9 +2435,21 @@ public final class Native implements Version {
         }
     }
 
-    static native void read(Pointer pointer, long baseaddr, long offset, float[] buf, int index, int length);
+    static void read(Pointer pointer, long baseaddr, long offset, float[] buf, int index, int length) {
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        for (int i = 0; i < length; i++) {
+            buf[index + i] = getFloat(pointer,baseaddr + offset + i * 4, 0);
+        }
+    }
 
-    static native void read(Pointer pointer, long baseaddr, long offset, double[] buf, int index, int length);
+    static void read(Pointer pointer, long baseaddr, long offset, double[] buf, int index, int length) {
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        for (int i = 0; i < length; i++) {
+            buf[index + i] = getDouble(pointer,baseaddr + offset + i * 8, 0);
+        }
+    }
 
     static void write(Pointer pointer, long baseaddr, long offset, byte[] buf, int index, int length) {
         ByteBuffer byteBuffer = LibraryContext.get().getMemoryBuffer();
@@ -2470,9 +2482,17 @@ public final class Native implements Version {
         }
     }
 
-    static native void write(Pointer pointer, long baseaddr, long offset, float[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, float[] buf, int index, int length) {
+        for (int i = 0; i < length; i++) {
+            setFloat(pointer, baseaddr + offset + i * 4, 0, buf[index + i]);
+        }
+    }
 
-    static native void write(Pointer pointer, long baseaddr, long offset, double[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, double[] buf, int index, int length) {
+        for (int i = 0; i < length; i++) {
+            setDouble(pointer, baseaddr + offset + i * 8, 0, buf[index + i]);
+        }
+    }
 
     static byte getByte(Pointer pointer, long baseaddr, long offset) {
         return LibraryContext.get().getMemoryBuffer().get((int) (baseaddr + offset));
@@ -2499,11 +2519,11 @@ public final class Native implements Version {
     }
 
     static float getFloat(Pointer pointer, long baseaddr, long offset) {
-        return LibraryContext.get().getMemoryBuffer().getFloat((int) (baseaddr + offset));
+        return Float.intBitsToFloat(getInt(pointer, baseaddr, offset));
     }
 
     static double getDouble(Pointer pointer, long baseaddr, long offset) {
-        return LibraryContext.get().getMemoryBuffer().getDouble((int) (baseaddr + offset));
+        return Double.longBitsToDouble(getLong(pointer, baseaddr, offset));
     }
 
     static Pointer getPointer(long addr) {
@@ -2591,11 +2611,11 @@ public final class Native implements Version {
     }
 
     static void setFloat(Pointer pointer, long baseaddr, long offset, float value) {
-        LibraryContext.get().getMemoryBuffer().putFloat((int) (baseaddr + offset), value);
+        setInt(pointer, baseaddr, offset, Float.floatToIntBits(value));
     }
 
     static void setDouble(Pointer pointer, long baseaddr, long offset, double value) {
-        LibraryContext.get().getMemoryBuffer().putDouble((int) (baseaddr + offset), value);
+        setLong(pointer, baseaddr, offset, Double.doubleToLongBits(value));
     }
 
     static void setPointer(Pointer pointer, long baseaddr, long offset, long value) {
