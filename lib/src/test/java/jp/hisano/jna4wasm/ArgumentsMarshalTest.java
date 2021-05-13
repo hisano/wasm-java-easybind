@@ -28,8 +28,6 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-import jp.hisano.jna4wasm.ArgumentsMarshalTest.TestLibrary.CheckFieldAlignment;
-import jp.hisano.jna4wasm.ArgumentsMarshalTest.TestLibrary.MixedUnion1;
 import jp.hisano.jna4wasm.Structure.FieldOrder;
 
 /** Exercise a range of native methods.
@@ -169,6 +167,7 @@ public class ArgumentsMarshalTest extends TestCase {
 
     @Override
     protected void tearDown() {
+        LibraryContext.get().dispose();
         lib = null;
     }
 

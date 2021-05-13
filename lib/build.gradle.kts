@@ -21,6 +21,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.11.1")
 
+    testImplementation("junit:junit:4.13.2")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+
     compileOnly("org.projectlombok:lombok:1.18.12")
 
     // This dependency is exported to consumers, that is to say found on their compile classpath.
