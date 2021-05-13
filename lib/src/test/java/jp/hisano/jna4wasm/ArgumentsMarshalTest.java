@@ -318,6 +318,7 @@ public class ArgumentsMarshalTest extends TestCase {
         return Native.load("testlib", NativeMappedLibrary.class);
     }
     public void testNativeMappedArgument() {
+        LibraryContext.get().dispose();
         NativeMappedLibrary lib = loadNativeMappedLibrary();
         final int MAGIC = 0x12345678;
         Custom arg = new Custom(MAGIC);
