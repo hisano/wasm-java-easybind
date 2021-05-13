@@ -146,6 +146,8 @@ public abstract class Structure {
     public static final int ALIGN_GNUC = 2;
     /** validated for w32/msvc; align on field size */
     public static final int ALIGN_MSVC = 3;
+    /** validated for WebAssembly */
+    public static final int ALIGN_WASM = 4;
 
     /** Align to a 2-byte boundary. */
     //public static final int ALIGN_2 = 4;
@@ -286,16 +288,8 @@ public abstract class Structure {
      * @param alignType desired alignment type
      */
     protected void setAlignType(int alignType) {
+        alignType = ALIGN_WASM;
         this.alignType = alignType;
-        if (alignType == ALIGN_DEFAULT) {
-            alignType = Native.getStructureAlignment(getClass());
-            if (alignType == ALIGN_DEFAULT) {
-                if (Platform.isWindows())
-                    alignType = ALIGN_MSVC;
-                else
-                    alignType = ALIGN_GNUC;
-            }
-        }
         this.actualAlignType = alignType;
         layoutChanged();
     }
@@ -1531,6 +1525,12 @@ public abstract class Structure {
             }
             if (!isFirstElement && Platform.isAIX() && (type == double.class || type == Double.class)) {
                 alignment = 4;
+            }
+        }
+        else if (actualAlignType == ALIGN_WASM) {
+            alignment = 2;
+            if (type == float.class || type == double.class) {
+                alignment = 8;
             }
         }
         return alignment;
