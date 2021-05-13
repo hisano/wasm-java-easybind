@@ -400,7 +400,7 @@ public class Memory extends Pointer {
      */
     @Override
     public void read(long bOff, char[] buf, int index, int length) {
-        boundsCheck(bOff, length * Native.WCHAR_SIZE);
+        boundsCheck(bOff, length * 2);
         super.read(bOff, buf, index, length);
     }
 
@@ -516,7 +516,7 @@ public class Memory extends Pointer {
      */
     @Override
     public void write(long bOff, char[] buf, int index, int length) {
-        boundsCheck(bOff, length * Native.WCHAR_SIZE);
+        boundsCheck(bOff, length * 2);
         super.write(bOff, buf, index, length);
     }
 

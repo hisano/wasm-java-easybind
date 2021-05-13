@@ -48,6 +48,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
@@ -66,6 +71,8 @@ import jp.hisano.jna4wasm.Structure.FFIType;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.script.Invocable;
 
 import com.google.common.io.ByteStreams;
 
@@ -1972,37 +1979,236 @@ public final class Native implements Version {
 
     static Object invoke(String fp, Object[] arguments) {
         List<Object> convertedArguments = new ArrayList<>();
-        Memory[] allocatedArguments = new Memory[arguments.length];
+        Memory[] temporaryMemoriesForArguments = new Memory[arguments.length];
         for (int i = 0; i < arguments.length; i++) {
             Object argument = arguments[i];
             if (argument instanceof Pointer) {
                 convertedArguments.add((int) ((Pointer)argument).peer);
             } else if (argument instanceof Structure) {
                 convertedArguments.add((int)((Structure)argument).getPointer().peer);
-            } else if (argument instanceof Character) {
-                convertedArguments.add((short)((Character)argument).charValue());
             } else if (argument instanceof byte[]) {
                 byte[] value = (byte[]) argument;
-                Memory nativeMemory = new Memory(value.length);
-                nativeMemory.write(0, value, 0, value.length);
-                allocatedArguments[i] = nativeMemory;
-                convertedArguments.add((int)nativeMemory.peer);
+                Memory temporaryMemory = new Memory(value.length);
+                temporaryMemory.write(0, value, 0, value.length);
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
+            } else if (argument instanceof char[]) {
+                char[] value = (char[]) argument;
+                Memory temporaryMemory = new Memory(value.length * 2);
+                temporaryMemory.write(0, value, 0, value.length);
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
+            } else if (argument instanceof short[]) {
+                short[] value = (short[]) argument;
+                Memory temporaryMemory = new Memory(value.length * 2);
+                temporaryMemory.write(0, value, 0, value.length);
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
+            } else if (argument instanceof int[]) {
+                int[] value = (int[]) argument;
+                Memory temporaryMemory = new Memory(value.length * 4);
+                temporaryMemory.write(0, value, 0, value.length);
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
+            } else if (argument instanceof long[]) {
+                long[] value = (long[]) argument;
+                Memory temporaryMemory = new Memory(value.length * 8);
+                temporaryMemory.write(0, value, 0, value.length);
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
+            } else if (argument instanceof ByteBuffer) {
+                ByteBuffer value = (ByteBuffer) argument;
+                Memory temporaryMemory = new Memory(value.capacity());
+                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
+            } else if (argument instanceof ShortBuffer) {
+                ShortBuffer value = (ShortBuffer) argument;
+                Memory temporaryMemory = new Memory(value.capacity() * 2);
+                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 2));
+            } else if (argument instanceof IntBuffer) {
+                IntBuffer value = (IntBuffer) argument;
+                Memory temporaryMemory = new Memory(value.capacity() * 4);
+                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 4));
+            } else if (argument instanceof LongBuffer) {
+                LongBuffer value = (LongBuffer) argument;
+                Memory temporaryMemory = new Memory(value.capacity() * 8);
+                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 8));
+            } else if (argument instanceof FloatBuffer) {
+                FloatBuffer value = (FloatBuffer) argument;
+                Memory temporaryMemory = new Memory(value.capacity() * 4);
+                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 4));
+            } else if (argument instanceof DoubleBuffer) {
+                DoubleBuffer value = (DoubleBuffer) argument;
+                Memory temporaryMemory = new Memory(value.capacity() * 8);
+                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 8));
             } else {
                 convertedArguments.add(argument);
             }
         }
 
-        Object result = NativeLibrary.handle.invokeFunction(fp, convertedArguments.toArray());
+        Object result;
+        if (fp.startsWith("dynCall")) {
+            int separatorIndex = fp.indexOf("@");
+            int functionIndex = Integer.parseInt(fp.substring(separatorIndex + 1), 16);
+            convertedArguments.add(0, functionIndex);
+            result = NativeLibrary.handle.invokeFunction(fp.substring(0, separatorIndex), convertedArguments.toArray());
+        } else {
+            result = NativeLibrary.handle.invokeFunction(fp, convertedArguments.toArray());
+        }
 
         for (int i = 0; i < arguments.length; i++) {
             Object argument = arguments[i];
             if (argument instanceof byte[]) {
-                byte[] value = (byte[])argument;
-                allocatedArguments[i].read(0, value, 0, value.length);
+                byte[] value = (byte[]) argument;
+                temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
+            } else if (argument instanceof char[]) {
+                char[] value = (char[]) argument;
+                temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
+            } else if (argument instanceof short[]) {
+                short[] value = (short[]) argument;
+                temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
+            } else if (argument instanceof int[]) {
+                int[] value = (int[]) argument;
+                temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
+            } else if (argument instanceof long[]) {
+                long[] value = (long[]) argument;
+                temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
+            } else if (argument instanceof Buffer) {
+                Buffer buffer = (Buffer)argument;
+                int limit = buffer.limit();
+                int position = buffer.position();
+                buffer.clear();
+                if (buffer instanceof ByteBuffer) {
+                    ByteBuffer value = (ByteBuffer) buffer;
+                    byte[] array = new byte[value.capacity()];
+                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
+                    value.put(array);
+                } else if (buffer instanceof ShortBuffer) {
+                    ShortBuffer value = (ShortBuffer) buffer;
+                    short[] array = new short[value.capacity()];
+                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
+                    value.put(array);
+                } else if (buffer instanceof IntBuffer) {
+                    IntBuffer value = (IntBuffer) buffer;
+                    int[] array = new int[value.capacity()];
+                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
+                    value.put(array);
+                } else if (buffer instanceof LongBuffer) {
+                    LongBuffer value = (LongBuffer) buffer;
+                    long[] array = new long[value.capacity()];
+                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
+                    value.put(array);
+                } else if (buffer instanceof FloatBuffer) {
+                    FloatBuffer value = (FloatBuffer) buffer;
+                    float[] array = new float[value.capacity()];
+                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
+                    value.put(array);
+                } else if (buffer instanceof DoubleBuffer) {
+                    DoubleBuffer value = (DoubleBuffer) buffer;
+                    double[] array = new double[value.capacity()];
+                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
+                    value.put(array);
+                } else {
+                    throw new IllegalStateException("not supported buffer");
+                }
+                buffer.limit(limit);
+                buffer.position(position);
+            }
+            if (temporaryMemoriesForArguments[i] != null) {
+                temporaryMemoriesForArguments[i].dispose();
             }
         }
 
         return result;
+    }
+
+    private static byte[] toArray(ByteBuffer source) {
+        if (source.hasArray()) {
+            return source.array();
+        } else {
+            byte[] result = new byte[source.capacity()];
+            int limit = source.limit();
+            source.flip();
+            source.get(result, 0, source.limit());
+            source.limit(limit);
+            return result;
+        }
+    }
+
+    private static short[] toArray(ShortBuffer source) {
+        if (source.hasArray()) {
+            return source.array();
+        } else {
+            short[] result = new short[source.capacity()];
+            int limit = source.limit();
+            source.flip();
+            source.get(result, 0, source.limit());
+            source.limit(limit);
+            return result;
+        }
+    }
+
+    private static int[] toArray(IntBuffer source) {
+        if (source.hasArray()) {
+            return source.array();
+        } else {
+            int[] result = new int[source.capacity()];
+            int limit = source.limit();
+            source.flip();
+            source.get(result, 0, source.limit());
+            source.limit(limit);
+            return result;
+        }
+    }
+
+    private static long[] toArray(LongBuffer source) {
+        if (source.hasArray()) {
+            return source.array();
+        } else {
+            long[] result = new long[source.capacity()];
+            int limit = source.limit();
+            source.flip();
+            source.get(result, 0, source.limit());
+            source.limit(limit);
+            return result;
+        }
+    }
+
+    private static float[] toArray(FloatBuffer source) {
+        if (source.hasArray()) {
+            return source.array();
+        } else {
+            float[] result = new float[source.capacity()];
+            int limit = source.limit();
+            source.flip();
+            source.get(result, 0, source.limit());
+            source.limit(limit);
+            return result;
+        }
+    }
+
+    private static double[] toArray(DoubleBuffer source) {
+        if (source.hasArray()) {
+            return source.array();
+        } else {
+            double[] result = new double[source.capacity()];
+            int limit = source.limit();
+            source.flip();
+            source.get(result, 0, source.limit());
+            source.limit(limit);
+            return result;
+        }
     }
 
     /**
@@ -2180,7 +2386,13 @@ public final class Native implements Version {
 
     static native void read(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length);
 
-    static native void read(Pointer pointer, long baseaddr, long offset, char[] buf, int index, int length);
+    static void read(Pointer pointer, long baseaddr, long offset, char[] buf, int index, int length) {
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        for (int i = 0; i < length; i++) {
+            buf[index + i] = getChar(pointer,baseaddr + offset + i * 2, 0);
+        }
+    }
 
     static native void read(Pointer pointer, long baseaddr, long offset, int[] buf, int index, int length);
 
@@ -2198,7 +2410,11 @@ public final class Native implements Version {
 
     static native void write(Pointer pointer, long baseaddr, long offset, short[] buf, int index, int length);
 
-    static native void write(Pointer pointer, long baseaddr, long offset, char[] buf, int index, int length);
+    static void write(Pointer pointer, long baseaddr, long offset, char[] buf, int index, int length) {
+        for (int i = 0; i < length; i++) {
+            setChar(pointer, baseaddr + offset + i * 2, 0, buf[index + i]);
+        }
+    }
 
     static native void write(Pointer pointer, long baseaddr, long offset, int[] buf, int index, int length);
 
@@ -2213,11 +2429,13 @@ public final class Native implements Version {
     }
 
     static char getChar(Pointer pointer, long baseaddr, long offset) {
-        return LibraryContext.get().getMemoryBuffer().getChar((int) (baseaddr + offset));
+        return (char) getShort(pointer, baseaddr, offset);
     }
 
     static short getShort(Pointer pointer, long baseaddr, long offset) {
-        return LibraryContext.get().getMemoryBuffer().getShort((int) (baseaddr + offset));
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        return (short) ((buffer.get() & 0xFF) | ((buffer.get() & 0xFF) << 8));
     }
 
     static int getInt(Pointer pointer, long baseaddr, long offset) {
@@ -2296,11 +2514,14 @@ public final class Native implements Version {
     }
 
     static void setShort(Pointer pointer, long baseaddr, long offset, short value) {
-        LibraryContext.get().getMemoryBuffer().putShort((int) (baseaddr + offset), value);
+        ByteBuffer buffer = LibraryContext.get().getMemoryBuffer();
+        buffer.position((int) (baseaddr + offset));
+        buffer.put((byte)value);
+        buffer.put((byte)(value >>> 8));
     }
 
     static void setChar(Pointer pointer, long baseaddr, long offset, char value) {
-        LibraryContext.get().getMemoryBuffer().putChar((int) (baseaddr + offset), value);
+        setShort(pointer, baseaddr, offset, (short)value);
     }
 
     static void setInt(Pointer pointer, long baseaddr, long offset, int value) {
