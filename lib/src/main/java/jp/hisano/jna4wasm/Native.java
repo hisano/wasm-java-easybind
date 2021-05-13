@@ -72,8 +72,6 @@ import jp.hisano.jna4wasm.Structure.FFIType;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.script.Invocable;
-
 import com.google.common.io.ByteStreams;
 
 /** Provides generation of invocation plumbing for a defined native
@@ -1986,6 +1984,18 @@ public final class Native implements Version {
                 convertedArguments.add((int) ((Pointer)argument).peer);
             } else if (argument instanceof Structure) {
                 convertedArguments.add((int)((Structure)argument).getPointer().peer);
+            } else if (argument instanceof boolean[]) {
+                boolean[] value = (boolean[]) argument;
+
+                byte[] bytes = new byte[value.length];
+                for (int j = 0; j < value.length; j++) {
+                    bytes[j] = (byte) (value[j]? 1: 0);
+                }
+
+                Memory temporaryMemory = new Memory(value.length);
+                temporaryMemory.write(0, bytes, 0, value.length);
+                temporaryMemoriesForArguments[i] = temporaryMemory;
+                convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof byte[]) {
                 byte[] value = (byte[]) argument;
                 Memory temporaryMemory = new Memory(value.length);
@@ -2069,7 +2079,16 @@ public final class Native implements Version {
 
         for (int i = 0; i < arguments.length; i++) {
             Object argument = arguments[i];
-            if (argument instanceof byte[]) {
+            if (argument instanceof boolean[]) {
+                boolean[] value = (boolean[]) argument;
+
+                byte[] bytes = new byte[value.length];
+                temporaryMemoriesForArguments[i].read(0, bytes, 0, value.length);
+
+                for (int j = 0; j < value.length; j++) {
+                    value[j] = bytes[j] != 0;
+                }
+            } if (argument instanceof byte[]) {
                 byte[] value = (byte[]) argument;
                 temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
             } else if (argument instanceof char[]) {
