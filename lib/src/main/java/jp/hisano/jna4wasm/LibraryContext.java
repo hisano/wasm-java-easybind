@@ -122,7 +122,7 @@ public final class LibraryContext implements Disposable {
 
 			results = func.call(convertToVal(arguments));
 		} catch (WasmtimeException e) {
-			throw new UnsatisfiedLinkError();
+			throw new UnsatisfiedLinkError("no '" + functionName + "' function");
 		}
 
 		if (results.length == 0) {
