@@ -1976,9 +1976,9 @@ public final class Native implements Version {
         for (int i = 0; i < arguments.length; i++) {
             Object argument = arguments[i];
             if (argument instanceof Pointer) {
-                convertedArguments.add(((Pointer)argument).peer);
+                convertedArguments.add((int) ((Pointer)argument).peer);
             } else if (argument instanceof Structure) {
-                convertedArguments.add(((Structure)argument).getPointer().peer);
+                convertedArguments.add((int)((Structure)argument).getPointer().peer);
             } else if (argument instanceof Character) {
                 convertedArguments.add((short)((Character)argument).charValue());
             } else if (argument instanceof byte[]) {
@@ -1986,13 +1986,13 @@ public final class Native implements Version {
                 Memory nativeMemory = new Memory(value.length);
                 nativeMemory.write(0, value, 0, value.length);
                 allocatedArguments[i] = nativeMemory;
-                convertedArguments.add(nativeMemory.peer);
+                convertedArguments.add((int)nativeMemory.peer);
             } else {
                 convertedArguments.add(argument);
             }
         }
 
-        Object result = NativeLibrary.handle.invokeFunction(fp, arguments);
+        Object result = NativeLibrary.handle.invokeFunction(fp, convertedArguments.toArray());
 
         for (int i = 0; i < arguments.length; i++) {
             Object argument = arguments[i];
