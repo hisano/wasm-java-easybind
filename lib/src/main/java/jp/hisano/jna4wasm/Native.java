@@ -1988,7 +1988,7 @@ public final class Native implements Version {
                 convertedArguments.add((int) ((Pointer)argument).peer);
             } else if (argument instanceof Structure) {
                 Structure value = (Structure)argument;
-                if (isNoReturnFunction) {
+                if (isNoReturnFunction || argument instanceof Union) {
                     convertedArguments.add((int)(value.getPointer().peer));
                 } else if (value.size() <= 4) {
                     int convertedValue = 0;
