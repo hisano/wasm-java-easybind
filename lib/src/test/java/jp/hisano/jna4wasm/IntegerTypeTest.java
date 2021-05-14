@@ -28,6 +28,20 @@ import java.util.List;
 import junit.framework.TestCase;
 
 public class IntegerTypeTest extends TestCase {
+    interface Dummy extends Library {
+        void dummy();
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        Dummy dummy = Native.load("dummy.wasm", Dummy.class);
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        LibraryContext.get().dispose();
+    }
+
 
     public static class Sized extends IntegerType {
         private static final long serialVersionUID = 1L;
