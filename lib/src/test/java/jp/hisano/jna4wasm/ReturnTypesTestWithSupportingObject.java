@@ -26,13 +26,14 @@ package jp.hisano.jna4wasm;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
+
 import junit.framework.TestCase;
 
 /** Exercise a range of native methods.
  *
  * @author twall@users.sf.net
  */
-public class ReturnTypesTest extends TestCase {
+public class ReturnTypesTestWithSupportingObject extends TestCase {
 
     private static final String UNICODE = "[\u0444]";
     private static final int INT_MAGIC = 0x12345678;
@@ -128,58 +129,17 @@ public class ReturnTypesTest extends TestCase {
         WString[] returnPointerArgument(WString[] arg);
     }
 
-    TestLibrary lib;
+    NativeMappedLibrary libNativeMapped;
 
     @Override
     protected void setUp() {
-        lib = Native.load("testlib", TestLibrary.class);
+        libNativeMapped = Native.load("testlib", NativeMappedLibrary.class);
     }
 
     @Override
     protected void tearDown() {
         LibraryContext.get().dispose();
-        lib = null;
-    }
-
-    public void testReturnObjectUnsupported() throws Exception {
-        try {
-            lib.returnObjectArgument(new TestLibrary.TestObject());
-            fail("Java Object return is not supported, should throw IllegalArgumentException");
-        }
-        catch(IllegalArgumentException e) {
-            assertTrue("Exception should include return object type: " + e,
-                       e.getMessage().indexOf(TestLibrary.TestObject.class.getName()) != -1);
-        }
-        catch(Throwable e) {
-            fail("Method declared with Java Object return should throw IllegalArgumentException, not " + e);
-        }
-    }
-
-    public void testInvokeBoolean() {
-        assertFalse("Expect false", lib.returnFalse());
-        assertTrue("Expect true", lib.returnTrue());
-    }
-
-    public void testInvokeInt() {
-        assertEquals("Expect 32-bit zero", 0, lib.returnInt32Zero());
-        assertEquals("Expect 32-bit magic", INT_MAGIC, lib.returnInt32Magic());
-    }
-
-    public void testInvokeLong() {
-        assertEquals("Expect 64-bit zero", 0L, lib.returnInt64Zero());
-        assertEquals("Expect 64-bit magic", LONG_MAGIC, lib.returnInt64Magic());
-    }
-
-    public void testInvokeNativeLong() {
-        if (NativeLong.SIZE == 4) {
-            assertEquals("Expect 32-bit zero", new NativeLong(0), lib.returnLongZero());
-            assertEquals("Expect 32-bit magic",
-                         new NativeLong(INT_MAGIC), lib.returnLongMagic());
-        } else {
-            assertEquals("Expect 64-bit zero", new NativeLong(0L), lib.returnLongZero());
-            assertEquals("Expect 64-bit magic",
-                         new NativeLong(LONG_MAGIC), lib.returnLongMagic());
-        }
+        libNativeMapped = null;
     }
 
     public interface NativeMappedLibrary extends Library {
@@ -221,100 +181,21 @@ public class ReturnTypesTest extends TestCase {
         }
     }
 
-    public void testInvokeFloat() {
-        assertEquals("Expect float zero", 0f, lib.returnFloatZero(), 0d);
-        assertEquals("Expect float magic",
-                     FLOAT_MAGIC, lib.returnFloatMagic(), 0d);
-    }
+    public void testInvokeNativeMapped() {
+        final Custom EXPECTED = new Custom(INT_MAGIC);
+        assertEquals("NativeMapped 'Custom' result not mapped",
+                     EXPECTED, libNativeMapped.returnInt32Argument(INT_MAGIC));
 
-    public void testInvokeDouble() {
-        assertEquals("Expect double zero", 0d, lib.returnDoubleZero(), 0d);
-        assertEquals("Expect double magic",
-                     DOUBLE_MAGIC, lib.returnDoubleMagic(), 0d);
-    }
-
-    public void testInvokeString() {
-        assertEquals("Expect String magic", STRING_MAGIC, lib.returnStringMagic());
-    }
-
-    public void testInvokeWString() {
-        WString s = lib.returnWStringMagic();
-        assertEquals("Wrong length", STRING_MAGIC.length(), s.length());
-        assertEquals("Expect WString magic", new WString(STRING_MAGIC), s);
-    }
-
-    public void testInvokeStructure() {
-        TestLibrary.SimpleStructure.allocations = 0;
-        TestLibrary.SimpleStructure s = lib.returnStaticTestStructure();
-        assertEquals("Expect test structure magic", DOUBLE_MAGIC, s.value, 0d);
-        // Optimized structure allocation
-        assertEquals("Returned Structure should allocate no memory", 0, TestLibrary.SimpleStructure.allocations);
-    }
-
-    public void testInvokeNullStructure() {
-        TestLibrary.SimpleStructure s = lib.returnNullTestStructure();
-        assertNull("Expect null structure return", s);
-    }
-
-    public void testReturnSmallStructureByValue() {
-        TestLibrary.TestSmallStructure s = lib.returnSmallStructureByValue();
-        assertNotNull("Returned structure must not be null", s);
-        assertEquals("Wrong char field value (1)", 1, s.c1);
-        assertEquals("Wrong char field value (2)", 2, s.c2);
-        assertEquals("Wrong short field value", 3, s.s);
-    }
-
-    public void testReturnStructureByValue() {
-        TestLibrary.TestStructure s = lib.returnStructureByValue();
-        assertNotNull("Returned structure must not be null", s);
-        assertEquals("Wrong char field value", 1, s.c);
-        assertEquals("Wrong short field value", 2, s.s);
-        assertEquals("Wrong int field value", 3, s.i);
-        assertEquals("Wrong long field value", 4, s.j);
-
-        assertNotNull("Structure not initialized", s.inner);
-        assertEquals("Wrong inner structure value", 5, s.inner.value, 0);
-    }
-
-    public void testReturnPointerArray() {
-        Pointer value = new Memory(10);
-        Pointer[] input = {
-            value, null,
-        };
-        Pointer[] result = lib.returnPointerArgument(input);
-        assertEquals("Wrong array length", input.length-1, result.length);
-        assertEquals("Wrong array element value", value, result[0]);
-
-        assertNull("NULL should result in null return value", lib.returnPointerArgument((Pointer[])null));
-    }
-
-    public void testReturnStringArray() {
-        Charset charset = Charset.forName(Native.getDefaultStringEncoding());
-        final String VALUE = getName() + charset.decode(charset.encode(UNICODE));
-        String[] input = {
-            VALUE, null,
-        };
-        String[] result = lib.returnPointerArgument(input);
-        assertEquals("Wrong array length", input.length-1, result.length);
-        assertEquals("Wrong array element value", VALUE, result[0]);
-
-        assertNull("NULL should result in null return value", lib.returnPointerArgument((String[])null));
-    }
-
-    public void testReturnWStringArray() {
-        final WString VALUE = new WString(getName() + UNICODE);
-        WString[] input = {
-            VALUE, null,
-        };
-        WString[] result = lib.returnPointerArgument(input);
-        assertEquals("Wrong array length", input.length-1, result.length);
-        assertEquals("Wrong array element value", VALUE, result[0]);
-
-        assertNull("NULL should result in null return value", lib.returnPointerArgument((WString[])null));
+        assertEquals("NativeMapped IntegerType result not mapped (32)",
+                     new size_t(INT_MAGIC), libNativeMapped.returnInt32Magic());
+        if (Native.SIZE_T_SIZE == 8) {
+            assertEquals("NativeMapped IntegerType result not mapped (64)",
+                         new size_t(LONG_MAGIC), libNativeMapped.returnInt64Magic());
+        }
     }
 
     public static void main(String[] argList) {
-        junit.textui.TestRunner.run(ReturnTypesTest.class);
+        junit.textui.TestRunner.run(ReturnTypesTestWithSupportingObject.class);
     }
 
 }
