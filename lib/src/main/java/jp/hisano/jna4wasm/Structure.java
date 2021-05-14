@@ -1528,9 +1528,16 @@ public abstract class Structure {
             }
         }
         else if (actualAlignType == ALIGN_WASM) {
-            alignment = 2;
-            if (type == float.class || type == double.class) {
+            if (type == boolean.class || type == byte.class) {
+                alignment = 1;
+            } else if (type == char.class || type == short.class) {
+                alignment = 2;
+            } else if (type == int.class) {
+                alignment = 4;
+            } else if (type == long.class || type == float.class || type == double.class) {
                 alignment = 8;
+            } else {
+                alignment = 4;
             }
         }
         return alignment;

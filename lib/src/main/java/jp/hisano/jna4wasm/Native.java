@@ -2283,28 +2283,16 @@ public final class Native implements Version {
      * @param fp        function pointer
      * @param callFlags calling convention to be used
      * @param args      Arguments to pass to the native function
-     * @param memory    Memory for pre-allocated structure to hold the result
-     * @param type_info  Native type information for the Structure
-     */
-    private static native void invokeStructure(Function function, long fp, int callFlags,
-                                               Object[] args, long memory,
-                                               long type_info);
-
-    /**
-     * Call the native function, returning a struct by value.
-     *
-     * @param function  Present to prevent the GC to collect the Function object
-     *                  prematurely
-     * @param fp        function pointer
-     * @param callFlags calling convention to be used
-     * @param args      Arguments to pass to the native function
      *
      * @return the passed-in Structure
      */
-    static Structure invokeStructure(Function function, long fp, int callFlags, Object[] args,
+    static Structure invokeStructure(Function function, String fp, int callFlags, Object[] args,
                                      Structure s) {
-        invokeStructure(function, fp, callFlags, args, s.getPointer().peer,
-                        0);
+        Object[] newArgs = new Object[args.length + 1];
+        newArgs[0] = s;
+        System.arraycopy(args, 0, newArgs, 1, args.length);
+
+        invokeVoid(function, fp, callFlags, newArgs);
         return s;
     }
 

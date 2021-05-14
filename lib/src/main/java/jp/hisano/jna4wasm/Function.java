@@ -435,7 +435,7 @@ public class Function extends Pointer {
         } else if (Structure.class.isAssignableFrom(returnType)) {
             if (Structure.ByValue.class.isAssignableFrom(returnType)) {
                 Structure s =
-                    Native.invokeStructure(this, this.peer, callFlags, args,
+                    Native.invokeStructure(this, this.functionName, callFlags, args,
                                            Structure.newInstance((Class<? extends Structure>)returnType));
                 s.autoRead();
                 result = s;
