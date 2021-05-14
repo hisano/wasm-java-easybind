@@ -6,7 +6,7 @@ wasm-java-easybind enables developers write Java programs with WebAssembly libra
 Features
 ========
 
-* Automatic mapping from Java to native functions, with simple mappings for all primitive data types
+* Automatic mapping from Java to WebAssembly functions, with simple mappings for all primitive data types
 * Automatic conversion between C and Java strings, with customizable encoding/decoding
 * Structure and Union arguments/return values, by reference and by value
 * By-reference (pointer-to-type) arguments
