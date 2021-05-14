@@ -336,6 +336,7 @@ public class StructureTest extends TestCase {
         int getStructureSize(int type);
     }
     private void testStructureSize(int index) {
+        LibraryContext.get().dispose();
         testStructureSize("", index);
     }
     private void testStructureSize(String prefix, int index) {
@@ -395,6 +396,7 @@ public class StructureTest extends TestCase {
     }
 
     private void testAlignStruct(int index) {
+        LibraryContext.get().dispose();
         testAlignStruct("", index);
     }
     private void testAlignStruct(String prefix,int index) {
