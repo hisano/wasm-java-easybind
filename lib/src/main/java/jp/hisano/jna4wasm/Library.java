@@ -100,7 +100,7 @@ public interface Library {
         <em>NOTE:</em> This is for use with raw JNI interactions via the
         JNIEnv data structure.
     */
-    String OPTION_ALLOW_OBJECTS = "allow-objects";
+//    String OPTION_ALLOW_OBJECTS = "allow-objects";
     /** Calling convention for the entire library. */
     String OPTION_CALLING_CONVENTION = "calling-convention";
     /** Flags to use when opening the native library (see {@link Native#open(String,int)}) */

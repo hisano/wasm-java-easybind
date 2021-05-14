@@ -1676,7 +1676,7 @@ public final class Native implements Version {
         List<Method> mlist = new ArrayList<Method>();
         Map<String, ?> options = lib.getOptions();
         TypeMapper mapper = (TypeMapper) options.get(Library.OPTION_TYPE_MAPPER);
-        boolean allowObjects = Boolean.TRUE.equals(options.get(Library.OPTION_ALLOW_OBJECTS));
+        boolean allowObjects = false;
         options = cacheOptions(cls, options, null);
 
         for (Method m : methods) {
