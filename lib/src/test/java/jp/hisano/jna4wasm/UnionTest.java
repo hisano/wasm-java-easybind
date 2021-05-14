@@ -29,6 +29,19 @@ import junit.framework.TestCase;
 
 //@SuppressWarnings("unused")
 public class UnionTest extends TestCase {
+    interface Dummy extends Library {
+        void dummy();
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        IntegerTypeTest.Dummy dummy = Native.load("dummy.wasm", IntegerTypeTest.Dummy.class);
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        LibraryContext.get().dispose();
+    }
 
     public static class TestStructure extends Structure {
         public static final List<String> FIELDS = createFieldsOrder("value");
@@ -164,35 +177,35 @@ public class UnionTest extends TestCase {
         assertEquals("int structure not read properly", VALUE, ((IntStructure) u.getTypedValue(IntStructure.class)).value);
     }
 
-    public void testReadTypeInfo() {
-        SizedUnion u = new SizedUnion();
-        assertEquals("Wrong union size: " + u, 16, u.size());
-        assertNotNull("Type information is missing for union field of type " + BigTestStructure.class, Structure.getTypeInfo(BigTestStructure.class));
-        assertNotNull("Type information is missing for union instance", u.getTypeInfo());
-        if (Native.POINTER_SIZE == 4) {
-            assertEquals("Type size should be that of largest field if no field is active",
-                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getInt(0),
-                         u.getTypeInfo().getInt(0));
-        }
-        else {
-            assertEquals("Type size should be that of largest field if no field is active",
-                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getLong(0),
-                         u.getTypeInfo().getLong(0));
-        }
-        u.setType(int.class);
-        assertNotNull("Type information is missing for union field of type " + BigTestStructure.class, Structure.getTypeInfo(BigTestStructure.class));
-        assertNotNull("Type information is missing for union instance after type set", u.getTypeInfo());
-        if (Native.POINTER_SIZE == 4) {
-            assertEquals("Type size should be that of largest field if any field is active",
-                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getInt(0),
-                         u.getTypeInfo().getInt(0));
-        }
-        else {
-            assertEquals("Type size should be that of largest field if any field is active",
-                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getLong(0),
-                         u.getTypeInfo().getLong(0));
-        }
-    }
+//    public void testReadTypeInfo() {
+//        SizedUnion u = new SizedUnion();
+//        assertEquals("Wrong union size: " + u, 16, u.size());
+//        assertNotNull("Type information is missing for union field of type " + BigTestStructure.class, Structure.getTypeInfo(BigTestStructure.class));
+//        assertNotNull("Type information is missing for union instance", u.getTypeInfo());
+//        if (Native.POINTER_SIZE == 4) {
+//            assertEquals("Type size should be that of largest field if no field is active",
+//                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getInt(0),
+//                         u.getTypeInfo().getInt(0));
+//        }
+//        else {
+//            assertEquals("Type size should be that of largest field if no field is active",
+//                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getLong(0),
+//                         u.getTypeInfo().getLong(0));
+//        }
+//        u.setType(int.class);
+//        assertNotNull("Type information is missing for union field of type " + BigTestStructure.class, Structure.getTypeInfo(BigTestStructure.class));
+//        assertNotNull("Type information is missing for union instance after type set", u.getTypeInfo());
+//        if (Native.POINTER_SIZE == 4) {
+//            assertEquals("Type size should be that of largest field if any field is active",
+//                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getInt(0),
+//                         u.getTypeInfo().getInt(0));
+//        }
+//        else {
+//            assertEquals("Type size should be that of largest field if any field is active",
+//                         Structure.getTypeInfo(BigTestStructure.class).getPointer().getLong(0),
+//                         u.getTypeInfo().getLong(0));
+//        }
+//    }
 
     public void testArraysInUnion() {
         class TestUnion extends Union {
