@@ -34,8 +34,22 @@ import jp.hisano.jna4wasm.ptr.ShortByReference;
 import junit.framework.TestCase;
 
 public class ByReferenceToStringTest extends TestCase {
+    interface Dummy extends Library {
+        void dummy();
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        Dummy dummy = Native.load("dummy.wasm", Dummy.class);
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        LibraryContext.get().dispose();
+    }
 
     public void testToStrings() {
+        
         LongByReference lbr = new LongByReference(42L);
         parseAndTest(lbr.toString(), "long", "0x2a (42)");
         lbr = new LongByReference(-42L);
