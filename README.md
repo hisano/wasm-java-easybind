@@ -1,10 +1,25 @@
-Java Native Access for WebAssembly (jna4wasm)
-=============================================
+wasm-java-easybind
+==================
 
-jna4wasm enables developers write Java programs with WebAssembly libraries easily. This library has APIs like JNA.
- 
-How to use
-==========
+wasm-java-easybind enables developers write Java programs with WebAssembly libraries easily. This library has APIs like JNA (Java Native Access).
+
+Features
+========
+
+* Automatic mapping from Java to native functions, with simple mappings for all primitive data types
+* Automatic conversion between C and Java strings, with customizable encoding/decoding
+* Structure and Union arguments/return values, by reference and by value
+* By-reference (pointer-to-type) arguments
+* Java array and NIO Buffer arguments (primitive types and pointers) as pointer-to-buffer
+* Nested structures and arrays
+* Wide (wchar_t-based) strings
+* Customizable marshalling/unmarshalling (argument and return value conversions)
+* Customizable mapping from Java method to native function name, and customizable invocation to simulate C preprocessor function macros
+* Support for automatic Windows ASCII/UNICODE function mappings
+* Type-safety for native pointers
+
+Example
+=======
 
 * Write C code and save it as 'hello.c'
 
@@ -26,8 +41,8 @@ docker run -it --rm -v $(pwd):/src emscripten/emsdk:2.0.20 emcc --no-entry -s EX
 * Write Java code and run it
 
 ```java
-import jp.hisano.jna4wasm.Library;
-import jp.hisano.jna4wasm.Native;
+import jp.hisano.wasm.easybind.Library;
+import jp.hisano.wasm.easybind.Native;
 
 public class HelloMain {
 	public static void main(String[] args) {
