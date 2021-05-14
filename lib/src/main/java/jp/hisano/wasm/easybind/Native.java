@@ -27,6 +27,7 @@ import java.awt.Component;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.Window;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -68,8 +69,6 @@ import java.util.WeakHashMap;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.google.common.io.ByteStreams;
 
 /** Provides generation of invocation plumbing for a defined native
  * library interface.  Also provides various utilities for native operations.
@@ -2312,13 +2311,23 @@ public final class Native implements Version {
                 throw new UnsatisfiedLinkError();
             }
             
-            byte[] wasmBytes = ByteStreams.toByteArray(in);
+            byte[] wasmBytes = toByteArray(in);
 
             LibraryContext context = LibraryContext.get();
             context.loadBinary(wasmBytes);
             return context;
         } catch (IOException e) {
             throw new UnsatisfiedLinkError();
+        }
+    }
+
+    private static byte[] toByteArray(InputStream in) throws IOException {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[0x10000];
+            for (int length = in.read(buffer); length != -1; length = in.read(buffer)) {
+                out.write(buffer, 0, length);
+            }
+            return out.toByteArray();
         }
     }
 
