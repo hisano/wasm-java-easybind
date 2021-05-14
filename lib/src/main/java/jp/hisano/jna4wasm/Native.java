@@ -1972,10 +1972,14 @@ public final class Native implements Version {
      * @param args      Arguments to pass to the native function
      */
     static void invokeVoid(Function function, String fp, int callFlags, Object[] args) {
-        invoke(fp, args);
+        invoke(fp, args, true);
     }
 
     private static Object invoke(String fp, Object[] arguments) {
+        return invoke(fp, arguments,false);
+    }
+
+    private static Object invoke(String fp, Object[] arguments, boolean isNoReturnFunction) {
         List<Object> convertedArguments = new ArrayList<>();
         Memory[] temporaryMemoriesForArguments = new Memory[arguments.length];
         for (int i = 0; i < arguments.length; i++) {
@@ -1984,7 +1988,9 @@ public final class Native implements Version {
                 convertedArguments.add((int) ((Pointer)argument).peer);
             } else if (argument instanceof Structure) {
                 Structure value = (Structure)argument;
-                if (value.size() <= 4) {
+                if (isNoReturnFunction) {
+                    convertedArguments.add((int)(value.getPointer().peer));
+                } else if (value.size() <= 4) {
                     int convertedValue = 0;
                     for (int j = 0; j < value.size(); j++) {
                         convertedValue |= ((value.getPointer().getByte(j) & 0xFF) << (8 * j));
