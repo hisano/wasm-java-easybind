@@ -42,6 +42,11 @@ public class TypeMapperTest extends TestCase {
         String returnWStringArgument(WString s);
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        LibraryContext.get().dispose();
+    }
+
     public void testBooleanToIntArgumentConversion() {
         final int MAGIC = 0xABEDCF23;
         DefaultTypeMapper mapper = new DefaultTypeMapper();
