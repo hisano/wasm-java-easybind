@@ -178,6 +178,10 @@ public final class Platform {
         return false;
     }
 
+    public static final boolean isWebAssembly() {
+        return true;
+    }
+
     static String getCanonicalArchitecture(String arch, int platform) {
         arch = arch.toLowerCase().trim();
         if ("powerpc".equals(arch)) {
