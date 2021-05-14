@@ -1983,7 +1983,22 @@ public final class Native implements Version {
             if (argument instanceof Pointer) {
                 convertedArguments.add((int) ((Pointer)argument).peer);
             } else if (argument instanceof Structure) {
-                convertedArguments.add((int)((Structure)argument).getPointer().peer);
+                Structure value = (Structure)argument;
+                if (value.size() <= 4) {
+                    int convertedValue = 0;
+                    for (int j = 0; j < value.size(); j++) {
+                        convertedValue |= ((value.getPointer().getByte(j) & 0xFF) << (8 * j));
+                    }
+                    convertedArguments.add(convertedValue);
+                } else if (value.size() <= 8) {
+                    long convertedValue = 0;
+                    for (int j = 0; j < value.size(); j++) {
+                        convertedValue |= ((value.getPointer().getByte(j) & 0xFFL) << (8 * j));
+                    }
+                    convertedArguments.add(convertedValue);
+                }  else {
+                    convertedArguments.add((int)(value.getPointer().peer));
+                }
             } else if (argument instanceof boolean[]) {
                 boolean[] value = (boolean[]) argument;
 
