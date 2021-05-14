@@ -1378,9 +1378,9 @@ public final class Native implements Version {
      * interface.
      * @param libName library name to which functions should be bound
      */
-    public static void register(String libName) {
-        register(findDirectMappedClass(getCallingClass()), libName);
-    }
+//    public static void register(String libName) {
+//        register(findDirectMappedClass(getCallingClass()), libName);
+//    }
 
     /**
      * When called from a class static initializer, maps all native methods
@@ -1388,9 +1388,9 @@ public final class Native implements Version {
      * interface.
      * @param lib native library to which functions should be bound
      */
-    public static void register(NativeLibrary lib) {
-        register(findDirectMappedClass(getCallingClass()), lib);
-    }
+//    public static void register(NativeLibrary lib) {
+//        register(findDirectMappedClass(getCallingClass()), lib);
+//    }
 
     /** Find the nearest enclosing class with native methods. */
     static Class<?> findDirectMappedClass(Class<?> cls) {
