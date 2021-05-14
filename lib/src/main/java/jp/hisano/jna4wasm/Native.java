@@ -1975,7 +1975,7 @@ public final class Native implements Version {
         invoke(fp, args);
     }
 
-    static Object invoke(String fp, Object[] arguments) {
+    private static Object invoke(String fp, Object[] arguments) {
         List<Object> convertedArguments = new ArrayList<>();
         Memory[] temporaryMemoriesForArguments = new Memory[arguments.length];
         for (int i = 0; i < arguments.length; i++) {
@@ -2028,40 +2028,34 @@ public final class Native implements Version {
                 convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof ByteBuffer) {
                 ByteBuffer value = (ByteBuffer) argument;
-                Memory temporaryMemory = new Memory(value.capacity());
-                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                Memory temporaryMemory = new Memory(value.remaining());
                 temporaryMemoriesForArguments[i] = temporaryMemory;
                 convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof ShortBuffer) {
                 ShortBuffer value = (ShortBuffer) argument;
-                Memory temporaryMemory = new Memory(value.capacity() * 2);
-                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                Memory temporaryMemory = new Memory(value.remaining() * 2);
                 temporaryMemoriesForArguments[i] = temporaryMemory;
-                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 2));
+                convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof IntBuffer) {
                 IntBuffer value = (IntBuffer) argument;
-                Memory temporaryMemory = new Memory(value.capacity() * 4);
-                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                Memory temporaryMemory = new Memory(value.remaining() * 4);
                 temporaryMemoriesForArguments[i] = temporaryMemory;
-                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 4));
+                convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof LongBuffer) {
                 LongBuffer value = (LongBuffer) argument;
-                Memory temporaryMemory = new Memory(value.capacity() * 8);
-                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                Memory temporaryMemory = new Memory(value.remaining() * 8);
                 temporaryMemoriesForArguments[i] = temporaryMemory;
-                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 8));
+                convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof FloatBuffer) {
                 FloatBuffer value = (FloatBuffer) argument;
-                Memory temporaryMemory = new Memory(value.capacity() * 4);
-                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                Memory temporaryMemory = new Memory(value.remaining() * 4);
                 temporaryMemoriesForArguments[i] = temporaryMemory;
-                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 4));
+                convertedArguments.add((int)temporaryMemory.peer);
             } else if (argument instanceof DoubleBuffer) {
                 DoubleBuffer value = (DoubleBuffer) argument;
-                Memory temporaryMemory = new Memory(value.capacity() * 8);
-                temporaryMemory.write(0, toArray(value), 0, value.capacity());
+                Memory temporaryMemory = new Memory(value.remaining() * 8);
                 temporaryMemoriesForArguments[i] = temporaryMemory;
-                convertedArguments.add((int)(temporaryMemory.peer + value.position() * 8));
+                convertedArguments.add((int)temporaryMemory.peer);
             } else {
                 convertedArguments.add(argument);
             }
@@ -2103,46 +2097,24 @@ public final class Native implements Version {
             } else if (argument instanceof long[]) {
                 long[] value = (long[]) argument;
                 temporaryMemoriesForArguments[i].read(0, value, 0, value.length);
-            } else if (argument instanceof Buffer) {
-                Buffer buffer = (Buffer)argument;
-                int limit = buffer.limit();
-                int position = buffer.position();
-                buffer.clear();
-                if (buffer instanceof ByteBuffer) {
-                    ByteBuffer value = (ByteBuffer) buffer;
-                    byte[] array = new byte[value.capacity()];
-                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
-                    value.put(array);
-                } else if (buffer instanceof ShortBuffer) {
-                    ShortBuffer value = (ShortBuffer) buffer;
-                    short[] array = new short[value.capacity()];
-                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
-                    value.put(array);
-                } else if (buffer instanceof IntBuffer) {
-                    IntBuffer value = (IntBuffer) buffer;
-                    int[] array = new int[value.capacity()];
-                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
-                    value.put(array);
-                } else if (buffer instanceof LongBuffer) {
-                    LongBuffer value = (LongBuffer) buffer;
-                    long[] array = new long[value.capacity()];
-                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
-                    value.put(array);
-                } else if (buffer instanceof FloatBuffer) {
-                    FloatBuffer value = (FloatBuffer) buffer;
-                    float[] array = new float[value.capacity()];
-                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
-                    value.put(array);
-                } else if (buffer instanceof DoubleBuffer) {
-                    DoubleBuffer value = (DoubleBuffer) buffer;
-                    double[] array = new double[value.capacity()];
-                    temporaryMemoriesForArguments[i].read(0, array, 0, array.length);
-                    value.put(array);
-                } else {
-                    throw new IllegalStateException("not supported buffer");
-                }
-                buffer.limit(limit);
-                buffer.position(position);
+            } else if (argument instanceof ByteBuffer) {
+                ByteBuffer value = (ByteBuffer) argument;
+                value.put(temporaryMemoriesForArguments[i].getByteArray(0, (int) temporaryMemoriesForArguments[i].size()));
+            } else if (argument instanceof ShortBuffer) {
+                ShortBuffer value = (ShortBuffer) argument;
+                value.put(temporaryMemoriesForArguments[i].getShortArray(0, (int) temporaryMemoriesForArguments[i].size() / 2));
+            } else if (argument instanceof IntBuffer) {
+                IntBuffer value = (IntBuffer) argument;
+                value.put(temporaryMemoriesForArguments[i].getIntArray(0, (int) temporaryMemoriesForArguments[i].size() / 4));
+            } else if (argument instanceof LongBuffer) {
+                LongBuffer value = (LongBuffer) argument;
+                value.put(temporaryMemoriesForArguments[i].getLongArray(0, (int) temporaryMemoriesForArguments[i].size() / 8));
+            } else if (argument instanceof FloatBuffer) {
+                FloatBuffer value = (FloatBuffer) argument;
+                value.put(temporaryMemoriesForArguments[i].getFloatArray(0, (int) temporaryMemoriesForArguments[i].size() / 4));
+            } else if (argument instanceof DoubleBuffer) {
+                DoubleBuffer value = (DoubleBuffer) argument;
+                value.put(temporaryMemoriesForArguments[i].getDoubleArray(0, (int) temporaryMemoriesForArguments[i].size() / 8));
             }
             if (temporaryMemoriesForArguments[i] != null) {
                 temporaryMemoriesForArguments[i].dispose();
