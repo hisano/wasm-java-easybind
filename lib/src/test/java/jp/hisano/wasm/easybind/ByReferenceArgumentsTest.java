@@ -60,7 +60,6 @@ public class ByReferenceArgumentsTest extends TestCase {
     @Override
     protected void tearDown() {
         LibraryContext.get().dispose();
-        lib = null;
     }
 
     public void testByteByReference() {

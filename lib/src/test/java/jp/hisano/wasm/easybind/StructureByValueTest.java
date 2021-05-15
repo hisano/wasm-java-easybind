@@ -65,7 +65,6 @@ public class StructureByValueTest extends TestCase {
     @Override
     protected void tearDown() {
         LibraryContext.get().dispose();
-        lib = null;
     }
 
     public static abstract class ByValueStruct extends Structure implements Structure.ByValue { }
