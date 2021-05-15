@@ -2346,7 +2346,8 @@ public final class Native implements Version {
 
     /** Close the given native library. */
     static void close(LibraryContext handle) {
-        handle.dispose();
+        // TODO Add LibraryContext auto release
+//        handle.dispose();
     }
 
     static native long findSymbol(LibraryContext handle, String name);
