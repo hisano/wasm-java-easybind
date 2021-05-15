@@ -1,8 +1,10 @@
 package jp.hisano.wasm.easybind;
 
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
@@ -10,9 +12,9 @@ import java.util.stream.Stream;
 import io.github.kawamuray.wasmtime.Disposable;
 import io.github.kawamuray.wasmtime.Extern;
 import io.github.kawamuray.wasmtime.Func;
+import io.github.kawamuray.wasmtime.FuncType;
 import io.github.kawamuray.wasmtime.Linker;
 import io.github.kawamuray.wasmtime.Memory;
-import io.github.kawamuray.wasmtime.Module;
 import io.github.kawamuray.wasmtime.Store;
 import io.github.kawamuray.wasmtime.Val;
 import io.github.kawamuray.wasmtime.WasmtimeException;
@@ -45,6 +47,25 @@ public final class LibraryContext implements Disposable {
 		return _store;
 	}
 
+	public void defineModule(Module module) {
+		lateInit();
+
+		Stream.of(module.getClass().getDeclaredMethods()).forEach(method -> {
+			String functionName = method.getName();
+			FuncType functionType = new FuncType(new Val.Type[] {}, new Val.Type[] {});
+			Func.Handler functionHandler = (caller, params, results) -> {
+				try {
+					method.invoke(module);
+				} catch (IllegalAccessException | InvocationTargetException e) {
+					throw new IllegalStateException(e);
+				}
+				return Optional.empty();
+			};
+			Func function = new Func(getStore(), functionType, functionHandler);
+			defineFunction("env", functionName, function);
+		});
+	}
+
 	synchronized void defineFunction(String functionName, Func function) {
 		defineFunction("env", functionName, addResource(function));
 	}
@@ -70,7 +91,7 @@ public final class LibraryContext implements Disposable {
 	synchronized void loadBinary(byte[] wasmBytes) {
 		lateInit();
 
-		_linker.module("", addResource(Module.fromBinary(_store.engine(), wasmBytes)));
+		_linker.module("", addResource(io.github.kawamuray.wasmtime.Module.fromBinary(_store.engine(), wasmBytes)));
 		_memory = addResource(_linker.getOneByName("", "memory").memory());
 		_memoryBuffer = _memory.buffer();
 	}
