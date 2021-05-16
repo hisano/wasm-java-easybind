@@ -3,9 +3,6 @@ package jp.hisano.wasm.easybind;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import io.github.kawamuray.wasmtime.Func;
-import io.github.kawamuray.wasmtime.WasmFunctions;
-import io.github.kawamuray.wasmtime.WasmValType;
 import static org.assertj.core.api.Assertions.*;
 
 public class LibraryTest {
@@ -44,17 +41,18 @@ public class LibraryTest {
 	@Test
 	public void testDependentReturnFalse() {
 		LibraryContext context = LibraryContext.get();
-
-		Func returnFalse = WasmFunctions.wrap(context.getStore(), WasmValType.I32, () -> {
-			return 0;
-		});
-		context.defineFunction("returnFalse", returnFalse);
-
+		context.defineModule(new TestLib2Module());
 		TestLib2 testLib2 = Native.load("testlib2.wasm", TestLib2.class);
-		assertThat(testLib2.dependentReturnFalse()).isFalse();
+		assertThat(testLib2.dependentReturnFalse()).isEqualTo(0);
 	}
 
-	public interface TestLib2 extends  Library {
-		boolean dependentReturnFalse();
+	public interface TestLib2 extends Library {
+		int dependentReturnFalse();
+	}
+
+	private class TestLib2Module implements Module {
+		public int returnFalse() {
+			return 0;
+		}
 	}
 }

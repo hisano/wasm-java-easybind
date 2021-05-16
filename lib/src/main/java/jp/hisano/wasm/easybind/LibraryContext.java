@@ -48,6 +48,10 @@ public final class LibraryContext implements Disposable {
 	}
 
 	public synchronized void defineModule(Module module) {
+		defineModule("env", module);
+	}
+
+	public synchronized void defineModule(String moduleName,Module module) {
 		lateInit();
 
 		Stream.of(module.getClass().getDeclaredMethods()).forEach(method -> {
@@ -68,7 +72,7 @@ public final class LibraryContext implements Disposable {
 				}
 				return Optional.empty();
 			};
-			defineFunction("env", functionName, new Func(getStore(), functionType, functionHandler));
+			_linker.define(moduleName, functionName, Extern.fromFunc(new Func(getStore(), functionType, functionHandler)));
 		});
 	}
 
@@ -109,16 +113,6 @@ public final class LibraryContext implements Disposable {
 				throw new IllegalArgumentException("unsupported type while defining function: type = " + type.getClass().getSimpleName());
 			}
 		}).toArray(Val.Type[]::new);
-	}
-
-	synchronized void defineFunction(String functionName, Func function) {
-		defineFunction("env", functionName, addResource(function));
-	}
-
-	synchronized void defineFunction(String moduleName, String functionName, Func function) {
-		lateInit();
-
-		_linker.define(moduleName, functionName, Extern.fromFunc(function));
 	}
 
 	private void lateInit() {
