@@ -25,7 +25,7 @@ public class HelloMainWithoutThisLibrary {
 			try (Module module = Module.fromBinary(store.engine(), wasm)) {
 				linker.module("", module);
 				try (Memory memory = linker.getOneByName("", "memory").memory()) {
-					byte[] world = "World".getBytes(StandardCharsets.UTF_8);
+					byte[] world = "World\u0000".getBytes(StandardCharsets.UTF_8);
 
 					int inputPointer;
 					try (Func malloc = linker.getOneByName("", "malloc").func()) {
@@ -38,6 +38,10 @@ public class HelloMainWithoutThisLibrary {
 
 					try (Func hello = linker.getOneByName("", "hello").func()) {
 						hello.call(Val.fromI32(inputPointer));
+					}
+
+					try (Func free = linker.getOneByName("", "free").func()) {
+						free.call(Val.fromI32(inputPointer));
 					}
 				}
 			}
