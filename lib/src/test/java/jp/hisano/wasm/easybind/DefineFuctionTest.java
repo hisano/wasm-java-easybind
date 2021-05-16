@@ -1,6 +1,5 @@
 package jp.hisano.wasm.easybind;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,10 +26,18 @@ public class DefineFuctionTest {
 	}
 
 	@Test
-	public void testCall() {
-		_library.call();
+	public void testCallVoid() {
+		_library.call_void();
 
 		assertThat(_module._isCalled).isTrue();
+	}
+
+	@Test
+	public void testCallTwo() {
+		assertThat(_library.call_two(1, 2)).isEqualTo(3);
+
+		assertThat(_library.call_two(Integer.MIN_VALUE, 1)).isEqualTo(Integer.MIN_VALUE + 1);
+		assertThat(_library.call_two(Integer.MAX_VALUE, -1)).isEqualTo(Integer.MAX_VALUE - 1);
 	}
 
 	@Test
@@ -54,8 +61,12 @@ public class DefineFuctionTest {
 	static class DefineModule implements Module {
 		boolean _isCalled;
 
-		public void call_java() {
+		public void call_void_java() {
 			_isCalled = true;
+		}
+
+		public int call_two_java(int value0, int value1) {
+			return value0 + value1;
 		}
 
 		public boolean call_boolean_java(boolean value) {
@@ -72,7 +83,8 @@ public class DefineFuctionTest {
 	}
 
 	interface DefineLibrary extends Library {
-		void call();
+		void call_void();
+		int call_two(int value0, int value1);
 
 		boolean call_boolean(boolean value);
 		int call_int(int value);
