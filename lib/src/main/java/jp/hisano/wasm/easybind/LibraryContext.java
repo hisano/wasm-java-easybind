@@ -34,6 +34,7 @@ public final class LibraryContext implements Disposable {
 	}
 
 	private static void addConverters() {
+		addConverter(boolean.class, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
 		addConverter(int.class, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
 
 		addConverter(String.class, Val.Type.I32, wasmValue -> new Pointer(wasmValue.i32()), jnaValue -> Val.fromI32((int) ((jp.hisano.wasm.easybind.Memory) jnaValue).peer));
@@ -107,42 +108,32 @@ public final class LibraryContext implements Disposable {
 	}
 
 	private Val toWasmValue(Object jnaValue, Class<?> javaType) {
-		ValueConverter converter = VALUE_CONVERTERS.get(javaType);
-
-		if (converter == null) {
-			throw new IllegalArgumentException("not supported type while returning wasm value from jna value: type = " + javaType.getClass().getSimpleName());
-		}
-
-		return converter.toWasmValue(jnaValue, javaType);
+		return getConverter(javaType, "while returning wasm value from jna value").toWasmValue(jnaValue, javaType);
 	}
 
 	private Object[] toJnaValues(Val[] wasmValues, Class[] javaTypes) {
 		Object[] jnaValues = new Object[wasmValues.length];
 		for (int i = 0; i < wasmValues.length; i++) {
-			ValueConverter converter = VALUE_CONVERTERS.get(javaTypes[i]);
-
-			if (converter == null) {
-				throw new IllegalArgumentException("not supported type while calling with wasm value: type = " + javaTypes[i].getClass().getSimpleName());
-			}
-
-			jnaValues[i] = converter.toJnaValue(wasmValues[i], javaTypes[i]);
+			jnaValues[i] = getConverter(javaTypes[i], "while calling with wasm value").toJnaValue(wasmValues[i], javaTypes[i]);
 		}
 		return jnaValues;
 	}
 
-	private Val.Type[] toWasmTypes(Class<?>[] types) {
-		if (types.length == 1 && types[0] == void.class) {
+	private Val.Type[] toWasmTypes(Class<?>[] javaTypes) {
+		if (javaTypes.length == 1 && javaTypes[0] == void.class) {
 			return new Val.Type[0];
 		}
-		return Stream.of(types).map(type -> {
-			ValueConverter converter = VALUE_CONVERTERS.get(type);
+		return Stream.of(javaTypes).map(type -> getConverter(type, "while defining function").toWasmTypes(type)).toArray(Val.Type[]::new);
+	}
 
-			if (converter == null) {
-				throw new IllegalArgumentException("unsupported type while defining function: type = " + type.getClass().getSimpleName());
-			}
+	private ValueConverter getConverter(Class<?> javaType, String errorMessageAppendix) {
+		ValueConverter converter = VALUE_CONVERTERS.get(javaType);
 
-			return converter.toWasmTypes(type);
-		}).toArray(Val.Type[]::new);
+		if (converter == null) {
+			throw new IllegalArgumentException("unsupported type " + errorMessageAppendix + ": type = " + javaType.getSimpleName());
+		}
+
+		return converter;
 	}
 
 	private void lateInit() {

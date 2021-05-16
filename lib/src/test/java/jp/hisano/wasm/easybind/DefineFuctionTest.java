@@ -34,6 +34,12 @@ public class DefineFuctionTest {
 	}
 
 	@Test
+	public void testCallBoolean() {
+		assertThat(_library.call_boolean(true)).isTrue();
+		assertThat(_library.call_boolean(false)).isFalse();
+	}
+
+	@Test
 	public void testCallInt() {
 		assertThat(_library.call_int(123)).isEqualTo(123);
 	}
@@ -50,6 +56,10 @@ public class DefineFuctionTest {
 			_isCalled = true;
 		}
 
+		public boolean call_boolean_java(boolean value) {
+			return value;
+		}
+
 		public int call_int_java(int value) {
 			return value;
 		}
@@ -61,7 +71,10 @@ public class DefineFuctionTest {
 
 	interface DefineLibrary extends Library {
 		void call();
+
+		boolean call_boolean(boolean value);
 		int call_int(int value);
+
 		String call_string(String value);
 	}
 }
