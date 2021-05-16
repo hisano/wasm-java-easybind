@@ -7,6 +7,7 @@ extern "C" {
 
 extern void call_java();
 extern int call_int_java(int value);
+extern char * call_string_java(char* value);
 
 void call() {
 	call_java();
@@ -14,6 +15,10 @@ void call() {
 
 int call_int(int value) {
 	return call_int_java(value);
+}
+
+char * call_string(char * value) {
+	return call_string_java(value);
 }
 
 #ifdef __cplusplus

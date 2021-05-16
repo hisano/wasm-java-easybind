@@ -226,7 +226,7 @@ public class CallbackReference extends WeakReference<Callback> {
     CallbackProxy proxy;
     Method method;
     int callingConvention;
-    private CallbackReference(Callback callback, int callingConvention, boolean direct) {
+    private CallbackReference(Module module, Method callbackMethod, Callback callback, int callingConvention, boolean direct) {
         super(callback);
         TypeMapper mapper = Native.getTypeMapper(callback.getClass());
         this.callingConvention = callingConvention;
@@ -276,14 +276,20 @@ public class CallbackReference extends WeakReference<Callback> {
                                                callingConvention, flags,
                                                encoding);
         } else {
-            if (callback instanceof CallbackProxy) {
-                proxy = (CallbackProxy)callback;
+            if (callbackMethod != null) {
+                proxy = new DefaultCallbackProxy(module, callbackMethod, mapper, encoding);
+                nativeParamTypes = proxy.getParameterTypes();
+                returnType = proxy.getReturnType();
+            } else {
+                if (callback instanceof CallbackProxy) {
+                    proxy = (CallbackProxy)callback;
+                }
+                else {
+                    proxy = new DefaultCallbackProxy(null, getCallbackMethod(callback), mapper, encoding);
+                }
+                nativeParamTypes = proxy.getParameterTypes();
+                returnType = proxy.getReturnType();
             }
-            else {
-                proxy = new DefaultCallbackProxy(getCallbackMethod(callback), mapper, encoding);
-            }
-            nativeParamTypes = proxy.getParameterTypes();
-            returnType = proxy.getReturnType();
 
             // Generate a list of parameter types that the native code can
             // handle.  Let the CallbackProxy do any further conversion
@@ -317,10 +323,12 @@ public class CallbackReference extends WeakReference<Callback> {
             int flags = DLL_CALLBACK_CLASS != null
                 && DLL_CALLBACK_CLASS.isInstance(callback)
                 ? Native.CB_OPTION_IN_DLL : 0;
-            peer = Native.createNativeCallback(proxy, PROXY_CALLBACK_METHOD,
-                                               nativeParamTypes, returnType,
-                                               callingConvention, flags,
-                                               encoding);
+            if (callbackMethod == null) {
+                peer = Native.createNativeCallback(proxy, PROXY_CALLBACK_METHOD,
+                        nativeParamTypes, returnType,
+                        callingConvention, flags,
+                        encoding);
+            }
         }
         cbstruct = peer != 0 ? new Pointer(peer) : null;
         allocatedMemory.put(this, new WeakReference<CallbackReference>(this));
@@ -483,6 +491,54 @@ public class CallbackReference extends WeakReference<Callback> {
         return getFunctionPointer(cb, false);
     }
 
+    static CallbackProxy createCallbackProxy(Module module, Method method, Callback cb) {
+        boolean direct = false;
+
+        if (method != null) {
+            cb = new CallbackProxy() {
+                @Override
+                public Class<?>[] getParameterTypes() {
+                    return method.getParameterTypes();
+                }
+
+                @Override
+                public Class<?> getReturnType() {
+                    return method.getReturnType();
+                }
+
+                @Override
+                public Object callback(Object[] args) {
+                    try {
+                        return method.invoke(module, args);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+            };
+        }
+
+        Map<String, ?> options = Native.getLibraryOptions(cb.getClass());
+        int callingConvention = cb instanceof AltCallingConvention
+                ? Function.ALT_CONVENTION
+                : (options != null && options.containsKey(Library.OPTION_CALLING_CONVENTION)
+                ? ((Integer)options.get(Library.OPTION_CALLING_CONVENTION)).intValue()
+                : Function.C_CONVENTION);
+
+        Map<Callback, CallbackReference> map = direct ? directCallbackMap : callbackMap;
+        synchronized(pointerCallbackMap) {
+            CallbackReference cbref = map.get(cb);
+            if (cbref == null) {
+                cbref = new CallbackReference(module, method, cb, callingConvention, direct);
+                map.put(cb, cbref);
+
+                if (initializers.containsKey(cb)) {
+                    cbref.setCallbackOptions(Native.CB_HAS_INITIALIZER);
+                }
+            }
+            return cbref.proxy;
+        }
+    }
+    
     /** Native code may call this method with direct=true. */
     private static Pointer getFunctionPointer(Callback cb, boolean direct) {
         Pointer fp = null;
@@ -503,7 +559,7 @@ public class CallbackReference extends WeakReference<Callback> {
         synchronized(pointerCallbackMap) {
             CallbackReference cbref = map.get(cb);
             if (cbref == null) {
-                cbref = new CallbackReference(cb, callingConvention, direct);
+                cbref = new CallbackReference(null, null, cb, callingConvention, direct);
                 map.put(cb, cbref);
                 pointerCallbackMap.put(cbref.getTrampoline(),
                         addCallbackToArray(cb, null));
@@ -517,11 +573,13 @@ public class CallbackReference extends WeakReference<Callback> {
     }
 
     private class DefaultCallbackProxy implements CallbackProxy {
+        private final Module module;
         private final Method callbackMethod;
         private ToNativeConverter toNative;
         private final FromNativeConverter[] fromNative;
         private final String encoding;
-        public DefaultCallbackProxy(Method callbackMethod, TypeMapper mapper, String encoding) {
+        public DefaultCallbackProxy(Module module, Method callbackMethod, TypeMapper mapper, String encoding) {
+            this.module = module;
             this.callbackMethod = callbackMethod;
             this.encoding = encoding;
             Class<?>[] argTypes = callbackMethod.getParameterTypes();
@@ -573,19 +631,28 @@ public class CallbackReference extends WeakReference<Callback> {
             }
 
             Object result = null;
-            Callback cb = DefaultCallbackProxy.this.getCallback();
-            if (cb != null) {
+            if (module != null){
                 try {
-                    result = convertResult(callbackMethod.invoke(cb, callbackArgs));
+                    result = convertResult(callbackMethod.invoke(module, callbackArgs));
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                    throw new IllegalStateException(e);
                 }
-                catch (IllegalArgumentException e) {
-                    Native.getCallbackExceptionHandler().uncaughtException(cb, e);
-                }
-                catch (IllegalAccessException e) {
-                    Native.getCallbackExceptionHandler().uncaughtException(cb, e);
-                }
-                catch (InvocationTargetException e) {
-                    Native.getCallbackExceptionHandler().uncaughtException(cb, e.getTargetException());
+            } else {
+                Callback cb = DefaultCallbackProxy.this.getCallback();
+                if (cb != null) {
+                    try {
+                        result = convertResult(callbackMethod.invoke(cb, callbackArgs));
+                    }
+                    catch (IllegalArgumentException e) {
+                        Native.getCallbackExceptionHandler().uncaughtException(cb, e);
+                    }
+                    catch (IllegalAccessException e) {
+                        Native.getCallbackExceptionHandler().uncaughtException(cb, e);
+                    }
+                    catch (InvocationTargetException e) {
+                        Native.getCallbackExceptionHandler().uncaughtException(cb, e.getTargetException());
+                    }
                 }
             }
             // Synch any structure arguments back to native memory

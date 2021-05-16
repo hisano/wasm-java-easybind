@@ -38,6 +38,11 @@ public class DefineFuctionTest {
 		assertThat(_library.call_int(123)).isEqualTo(123);
 	}
 
+	@Test
+	public void testCallString() {
+		assertThat(_library.call_string("hello")).isEqualTo("hello");
+	}
+
 	static class DefineModule implements Module {
 		boolean _isCalled;
 
@@ -48,10 +53,15 @@ public class DefineFuctionTest {
 		public int call_int_java(int value) {
 			return value;
 		}
+
+		public String call_string_java(String value) {
+			return value;
+		}
 	}
 
 	interface DefineLibrary extends Library {
 		void call();
 		int call_int(int value);
+		String call_string(String value);
 	}
 }
