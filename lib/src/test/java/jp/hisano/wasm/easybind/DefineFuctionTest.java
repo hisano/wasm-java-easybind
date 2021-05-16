@@ -41,7 +41,9 @@ public class DefineFuctionTest {
 
 	@Test
 	public void testCallInt() {
-		assertThat(_library.call_int(123)).isEqualTo(123);
+		assertThat(_library.call_int(Integer.MIN_VALUE)).isEqualTo(Integer.MIN_VALUE);
+		assertThat(_library.call_int(0)).isEqualTo(0);
+		assertThat(_library.call_int(Integer.MAX_VALUE)).isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
