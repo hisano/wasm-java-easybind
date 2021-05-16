@@ -84,7 +84,7 @@ public class NativeLibrary {
     private static final Logger LOG = Logger.getLogger(NativeLibrary.class.getName());
     private final static Level DEBUG_LOAD_LEVEL = Native.DEBUG_LOAD ? Level.INFO : Level.FINE;
 
-    static LibraryContext handle;
+    static final LibraryContext handle = LibraryContext.get();
     private final String libraryName;
     private final String libraryPath;
     private final Map<String, Function> functions = new HashMap<String, Function>();
@@ -109,7 +109,6 @@ public class NativeLibrary {
     private NativeLibrary(String libraryName, String libraryPath, LibraryContext handle, Map<String, ?> options) {
         this.libraryName = getLibraryName(libraryName);
         this.libraryPath = libraryPath;
-        this.handle = handle;
         Object option = options.get(Library.OPTION_CALLING_CONVENTION);
         int callingConvention = option instanceof Number ? ((Number)option).intValue() : Function.C_CONVENTION;
         this.callFlags = callingConvention;
@@ -684,12 +683,7 @@ public class NativeLibrary {
             }
         }
 
-        synchronized(this) {
-            if (handle != null) {
-                Native.close(handle);
-                handle = null;
-            }
-        }
+        Native.close(handle);
     }
 
     private static List<String> initPaths(String key) {
