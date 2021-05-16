@@ -228,7 +228,7 @@ public final class Native implements Version {
         Called when this class is finalized and also from JNI when
         JNA's native shared library is unloaded.
      */
-    private static void dispose() {
+    static void dispose() {
         CallbackReference.disposeAll();
         Memory.disposeAll();
         NativeLibrary.disposeAll();

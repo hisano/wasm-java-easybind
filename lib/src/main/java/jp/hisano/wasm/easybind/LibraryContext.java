@@ -106,6 +106,8 @@ public final class LibraryContext implements Disposable {
 			return;
 		}
 
+		Native.dispose();
+
 		_resources.forEach(Disposable::close);
 		_resources.clear();
 
