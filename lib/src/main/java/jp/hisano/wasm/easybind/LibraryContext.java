@@ -1,6 +1,7 @@
 package jp.hisano.wasm.easybind;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -47,15 +48,23 @@ public final class LibraryContext implements Disposable {
 		return _store;
 	}
 
-	public void defineModule(Module module) {
+	public synchronized void defineModule(Module module) {
 		lateInit();
 
 		Stream.of(module.getClass().getDeclaredMethods()).forEach(method -> {
+			if (!Modifier.isPublic(method.getModifiers())) {
+				return;
+			}
+
 			String functionName = method.getName();
-			FuncType functionType = new FuncType(new Val.Type[] {}, new Val.Type[] {});
-			Func.Handler functionHandler = (caller, params, results) -> {
+			FuncType functionType = new FuncType(toValTypes(method.getParameterTypes()), toValTypes(new Class[]{ method.getReturnType() }));
+			Func.Handler functionHandler = (caller, wasmArguments, wasmResults) -> {
 				try {
-					method.invoke(module);
+					Object[] javaArguments = toJavaValues(wasmArguments, method.getParameterTypes());
+					Object javaResult = method.invoke(module, javaArguments);
+					if (method.getReturnType() != void.class) {
+						wasmResults[0] = toWasmValue(javaResult, method.getReturnType());
+					}
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new IllegalStateException(e);
 				}
@@ -64,6 +73,39 @@ public final class LibraryContext implements Disposable {
 			Func function = new Func(getStore(), functionType, functionHandler);
 			defineFunction("env", functionName, function);
 		});
+	}
+
+	private Val toWasmValue(Object javaValue, Class<?> javaValueType) {
+		if (javaValueType == int.class) {
+			return Val.fromI32((Integer) javaValue);
+		} else {
+			throw new IllegalArgumentException("not supported type: type = " + javaValueType.getClass().getSimpleName());
+		}
+	}
+
+	private Object[] toJavaValues(Val[] wasmValues, Class[] javaValueTypes) {
+		Object[] javaValues = new Object[wasmValues.length];
+		for (int i = 0; i < wasmValues.length; i++) {
+			if (javaValueTypes[i] == int.class) {
+				javaValues[i] = wasmValues[i].i32();
+			} else {
+				throw new IllegalArgumentException("not supported type: type = " + javaValueTypes[i].getClass().getSimpleName());
+			}
+		}
+		return javaValues;
+	}
+
+	private Val.Type[] toValTypes(Class<?>[] types) {
+		if (types.length == 1 && types[0] == void.class) {
+			return new Val.Type[0];
+		}
+		return Stream.of(types).map(type -> {
+			if (type == int.class) {
+				return Val.Type.I32;
+			} else {
+				throw new IllegalArgumentException("unsupported type: type = " + type.getClass().getSimpleName());
+			}
+		}).toArray(Val.Type[]::new);
 	}
 
 	synchronized void defineFunction(String functionName, Func function) {
@@ -145,7 +187,7 @@ public final class LibraryContext implements Disposable {
 
 			results = func.call(convertToVal(arguments));
 		} catch (WasmtimeException e) {
-			throw new UnsatisfiedLinkError("no '_" + functionName + "' function");
+			throw new UnsatisfiedLinkError("no '_" + functionName + "' function or calling failure: message = " + e.getMessage());
 		}
 
 		if (results.length == 0) {
