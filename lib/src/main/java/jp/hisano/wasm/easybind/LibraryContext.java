@@ -28,6 +28,36 @@ public final class LibraryContext implements Disposable {
 		return INSTANCE;
 	}
 
+	private static final Map<Class<?>, ValueConverter> VALUE_CONVERTERS = new ConcurrentHashMap<>();
+	static {
+		addConverters();
+	}
+
+	private static void addConverters() {
+		addConverter(int.class, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
+
+		addConverter(String.class, Val.Type.I32, wasmValue -> new Pointer(wasmValue.i32()), jnaValue -> Val.fromI32((int) ((jp.hisano.wasm.easybind.Memory) jnaValue).peer));
+	}
+
+	private static void addConverter(Class<?> javaType, Val.Type wasmType, ToJnaValueConverter toJnaValueConverter, ToWasmValueConverter toWasmValueConverter) {
+		VALUE_CONVERTERS.put(javaType, new ValueConverter() {
+			@Override
+			public Val.Type toWasmTypes(Class<?> javaType) {
+				return wasmType;
+			}
+
+			@Override
+			public Object toJnaValue(Val wasmValue, Class javaType) {
+				return toJnaValueConverter.toJnaValue(wasmValue);
+			}
+
+			@Override
+			public Val toWasmValue(Object jnaValue, Class<?> javaType) {
+				return toWasmValueConverter.toWasmValue(jnaValue);
+			}
+		});
+	}
+
 	private Store _store;
 	private Linker _linker;
 
@@ -63,7 +93,7 @@ public final class LibraryContext implements Disposable {
 
 			CallbackProxy callbackProxy = CallbackReference.createCallbackProxy(module, method, null);
 
-			FuncType functionType = new FuncType(toValTypes(method.getParameterTypes()), toValTypes(new Class[]{ method.getReturnType() }));
+			FuncType functionType = new FuncType(toWasmTypes(method.getParameterTypes()), toWasmTypes(new Class[]{ method.getReturnType() }));
 			Func.Handler functionHandler = (caller, wasmArguments, wasmResults) -> {
 				Object[] jnaArguments = toJnaValues(wasmArguments, method.getParameterTypes());
 				Object jnaResult = callbackProxy.callback(jnaArguments);
@@ -77,41 +107,41 @@ public final class LibraryContext implements Disposable {
 	}
 
 	private Val toWasmValue(Object jnaValue, Class<?> javaType) {
-		if (javaType == int.class) {
-			return Val.fromI32((Integer) jnaValue);
-		} else if (javaType == String.class) {
-			return Val.fromI32((int) ((jp.hisano.wasm.easybind.Memory) jnaValue).peer);
-		} else {
+		ValueConverter converter = VALUE_CONVERTERS.get(javaType);
+
+		if (converter == null) {
 			throw new IllegalArgumentException("not supported type while returning wasm value from jna value: type = " + javaType.getClass().getSimpleName());
 		}
+
+		return converter.toWasmValue(jnaValue, javaType);
 	}
 
 	private Object[] toJnaValues(Val[] wasmValues, Class[] javaTypes) {
 		Object[] jnaValues = new Object[wasmValues.length];
 		for (int i = 0; i < wasmValues.length; i++) {
-			if (javaTypes[i] == int.class) {
-				jnaValues[i] = wasmValues[i].i32();
-			} else if (javaTypes[i] == String.class) {
-				jnaValues[i] = new Pointer(wasmValues[i].i32());
-			} else {
+			ValueConverter converter = VALUE_CONVERTERS.get(javaTypes[i]);
+
+			if (converter == null) {
 				throw new IllegalArgumentException("not supported type while calling with wasm value: type = " + javaTypes[i].getClass().getSimpleName());
 			}
+
+			jnaValues[i] = converter.toJnaValue(wasmValues[i], javaTypes[i]);
 		}
 		return jnaValues;
 	}
 
-	private Val.Type[] toValTypes(Class<?>[] types) {
+	private Val.Type[] toWasmTypes(Class<?>[] types) {
 		if (types.length == 1 && types[0] == void.class) {
 			return new Val.Type[0];
 		}
 		return Stream.of(types).map(type -> {
-			if (type == int.class) {
-				return Val.Type.I32;
-			} else if (type == String.class) {
-				return Val.Type.I32;
-			} else {
+			ValueConverter converter = VALUE_CONVERTERS.get(type);
+
+			if (converter == null) {
 				throw new IllegalArgumentException("unsupported type while defining function: type = " + type.getClass().getSimpleName());
 			}
+
+			return converter.toWasmTypes(type);
 		}).toArray(Val.Type[]::new);
 	}
 
@@ -241,5 +271,19 @@ public final class LibraryContext implements Disposable {
 		requireNotDisposed();
 
 		return _memoryBuffer;
+	}
+
+	private interface ToJnaValueConverter {
+		Object toJnaValue(Val wasmValue);
+	}
+
+	private interface ToWasmValueConverter {
+		Val toWasmValue(Object jnaValue);
+	}
+
+	private interface ValueConverter {
+		Val.Type toWasmTypes(Class<?> javaType);
+		Object toJnaValue(Val wasmValue, Class<?> javaType);
+		Val toWasmValue(Object jnaValue, Class<?> javaType);
 	}
 }
