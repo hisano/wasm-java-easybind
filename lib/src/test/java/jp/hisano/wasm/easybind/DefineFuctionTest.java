@@ -73,6 +73,10 @@ public class DefineFuctionTest {
 			return value;
 		}
 
+		public Boolean call_Boolean_java(Boolean value) {
+			return value;
+		}
+
 		public int call_int_java(int value) {
 			return value;
 		}
@@ -87,6 +91,7 @@ public class DefineFuctionTest {
 		int call_two(int value0, int value1);
 
 		boolean call_boolean(boolean value);
+		Boolean call_Boolean(Boolean value);
 		int call_int(int value);
 
 		String call_string(String value);

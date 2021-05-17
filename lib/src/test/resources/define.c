@@ -10,6 +10,7 @@ extern void call_void_java();
 extern int call_two_java(int value0, int value1);
 
 extern bool call_boolean_java(bool value);
+extern bool call_Boolean_java(bool value);
 extern int call_int_java(int value);
 
 extern char * call_string_java(char* value);
@@ -24,6 +25,10 @@ int call_two(int value0, int value1) {
 
 bool call_boolean(bool value) {
 	return call_boolean_java(value);
+}
+
+bool call_Boolean(bool value) {
+	return call_Boolean_java(value);
 }
 
 int call_int(int value) {

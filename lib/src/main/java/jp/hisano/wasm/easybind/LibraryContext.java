@@ -34,14 +34,17 @@ public final class LibraryContext implements Disposable {
 	}
 
 	private static void addConverters() {
-		addConverter(boolean.class, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
-		addConverter(int.class, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
+		addConverter(new Class<?>[]{ boolean.class, Boolean.class, int.class, Integer.class }, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
 
 		addConverter(String.class, Val.Type.I32, wasmValue -> new Pointer(wasmValue.i32()), jnaValue -> Val.fromI32((int) ((jp.hisano.wasm.easybind.Memory) jnaValue).peer));
 	}
 
 	private static void addConverter(Class<?> javaType, Val.Type wasmType, ToJnaValueConverter toJnaValueConverter, ToWasmValueConverter toWasmValueConverter) {
-		VALUE_CONVERTERS.put(javaType, new ValueConverter() {
+		addConverter(new Class<?>[] { javaType }, wasmType, toJnaValueConverter, toWasmValueConverter);
+	}
+
+	private static void addConverter(Class<?>[] javaTypes, Val.Type wasmType, ToJnaValueConverter toJnaValueConverter, ToWasmValueConverter toWasmValueConverter) {
+		ValueConverter converter = new ValueConverter() {
 			@Override
 			public Val.Type toWasmTypes(Class<?> javaType) {
 				return wasmType;
@@ -56,7 +59,8 @@ public final class LibraryContext implements Disposable {
 			public Val toWasmValue(Object jnaValue, Class<?> javaType) {
 				return toWasmValueConverter.toWasmValue(jnaValue);
 			}
-		});
+		};
+		Stream.of(javaTypes).forEach(javaType -> VALUE_CONVERTERS.put(javaType, converter));
 	}
 
 	private Store _store;
