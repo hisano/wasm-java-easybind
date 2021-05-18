@@ -28,13 +28,9 @@ import java.util.List;
 import junit.framework.TestCase;
 
 public class IntegerTypeTest extends TestCase {
-    interface Dummy extends Library {
-        void dummy();
-    }
-
     @Override
     protected void setUp() throws Exception {
-        Dummy dummy = Native.load("dummy.wasm", Dummy.class);
+        DummyLibrary library = Native.load("dummy.wasm", DummyLibrary.class);
     }
 
     @Override

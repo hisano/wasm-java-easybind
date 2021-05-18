@@ -47,13 +47,9 @@ public class StructureTest extends TestCase {
         junit.textui.TestRunner.run(StructureTest.class);
     }
 
-    interface Dummy extends Library {
-        void dummy();
-    }
-
     @Override
     protected void setUp() throws Exception {
-        IntegerTypeTest.Dummy dummy = Native.load("dummy.wasm", IntegerTypeTest.Dummy.class);
+        DummyLibrary library = Native.load("dummy.wasm", DummyLibrary.class);
     }
 
     @Override

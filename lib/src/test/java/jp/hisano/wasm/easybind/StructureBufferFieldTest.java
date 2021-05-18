@@ -35,13 +35,9 @@ import junit.framework.TestCase;
  */
 //@SuppressWarnings("unused")
 public class StructureBufferFieldTest extends TestCase {
-    interface Dummy extends Library {
-        void dummy();
-    }
-
     @Override
     protected void setUp() throws Exception {
-        Dummy dummy = Native.load("dummy.wasm", Dummy.class);
+        DummyLibrary library = Native.load("dummy.wasm", DummyLibrary.class);
     }
 
     @Override
