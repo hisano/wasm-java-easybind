@@ -34,16 +34,19 @@ public final class LibraryContext implements Disposable {
 	}
 
 	private static void addConverters() {
-		addConverter(new Class<?>[]{ boolean.class, Boolean.class, int.class, Integer.class }, Val.Type.I32, wasmValue -> wasmValue.i32(), jnaValue -> Val.fromI32((Integer) jnaValue));
+		addConverter(new Class<?>[]{ boolean.class, Boolean.class, int.class, Integer.class }, Val.Type.I32, jnaValue -> Val.fromI32((Integer) jnaValue), wasmValue -> wasmValue.i32());
+		addConverter(new Class<?>[]{ byte.class, Byte.class }, Val.Type.I32, jnaValue -> Val.fromI32((Byte) jnaValue), wasmValue -> (byte)wasmValue.i32());
+		addConverter(new Class<?>[]{ short.class, Short.class }, Val.Type.I32, jnaValue -> Val.fromI32((Short) jnaValue), wasmValue -> (short)wasmValue.i32());
+		addConverter(new Class<?>[]{ char.class, Character.class }, Val.Type.I32, jnaValue -> Val.fromI32((Character) jnaValue), wasmValue -> (char)wasmValue.i32());
 
 		addConverter(String.class, Val.Type.I32, wasmValue -> new Pointer(wasmValue.i32()), jnaValue -> Val.fromI32((int) ((jp.hisano.wasm.easybind.Memory) jnaValue).peer));
 	}
 
 	private static void addConverter(Class<?> javaType, Val.Type wasmType, ToJnaValueConverter toJnaValueConverter, ToWasmValueConverter toWasmValueConverter) {
-		addConverter(new Class<?>[] { javaType }, wasmType, toJnaValueConverter, toWasmValueConverter);
+		addConverter(new Class<?>[] { javaType }, wasmType, toWasmValueConverter, toJnaValueConverter);
 	}
 
-	private static void addConverter(Class<?>[] javaTypes, Val.Type wasmType, ToJnaValueConverter toJnaValueConverter, ToWasmValueConverter toWasmValueConverter) {
+	private static void addConverter(Class<?>[] javaTypes, Val.Type wasmType, ToWasmValueConverter toWasmValueConverter, ToJnaValueConverter toJnaValueConverter) {
 		ValueConverter converter = new ValueConverter() {
 			@Override
 			public Val.Type toWasmTypes(Class<?> javaType) {
