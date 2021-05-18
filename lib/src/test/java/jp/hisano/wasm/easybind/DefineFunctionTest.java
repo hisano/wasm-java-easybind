@@ -92,6 +92,43 @@ public class DefineFunctionTest {
 	}
 
 	@Test
+	public void testCallLong() {
+		assertThat(_library.call_long(Long.MIN_VALUE)).isEqualTo(Long.MIN_VALUE);
+		assertThat(_library.call_long(0L)).isEqualTo(0L);
+		assertThat(_library.call_long(Long.MAX_VALUE)).isEqualTo(Long.MAX_VALUE);
+
+		assertThat(_library.call_Long(Long.MIN_VALUE)).isEqualTo(Long.MIN_VALUE);
+		assertThat(_library.call_Long(0L)).isEqualTo(0L);
+		assertThat(_library.call_Long(Long.MAX_VALUE)).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void testCallFloat() {
+		assertThat(_library.call_float(Float.MIN_VALUE)).isEqualTo(Float.MIN_VALUE);
+		assertThat(_library.call_float(0F)).isEqualTo(0F);
+		assertThat(_library.call_float(Float.MAX_VALUE)).isEqualTo(Float.MAX_VALUE);
+		assertThat(_library.call_float(Float.NaN)).isEqualTo(Float.NaN);
+
+		assertThat(_library.call_Float(Float.MIN_VALUE)).isEqualTo(Float.MIN_VALUE);
+		assertThat(_library.call_Float(0F)).isEqualTo(0F);
+		assertThat(_library.call_Float(Float.MAX_VALUE)).isEqualTo(Float.MAX_VALUE);
+		assertThat(_library.call_Float(Float.NaN)).isEqualTo(Float.NaN);
+	}
+
+	@Test
+	public void testCallDouble() {
+		assertThat(_library.call_double(Double.MIN_VALUE)).isEqualTo(Double.MIN_VALUE);
+		assertThat(_library.call_double(0D)).isEqualTo(0D);
+		assertThat(_library.call_double(Double.MAX_VALUE)).isEqualTo(Double.MAX_VALUE);
+		assertThat(_library.call_double(Double.NaN)).isEqualTo(Double.NaN);
+
+		assertThat(_library.call_Double(Double.MIN_VALUE)).isEqualTo(Double.MIN_VALUE);
+		assertThat(_library.call_Double(0D)).isEqualTo(0D);
+		assertThat(_library.call_Double(Double.MAX_VALUE)).isEqualTo(Double.MAX_VALUE);
+		assertThat(_library.call_Double(Double.NaN)).isEqualTo(Double.NaN);
+	}
+
+	@Test
 	public void testCallString() {
 		assertThat(_library.call_string("hello")).isEqualTo("hello");
 	}
@@ -147,6 +184,30 @@ public class DefineFunctionTest {
 			return value;
 		}
 
+		public long call_long_java(long value) {
+			return value;
+		}
+
+		public Long call_Long_java(Long value) {
+			return value;
+		}
+
+		public float call_float_java(float value) {
+			return value;
+		}
+
+		public Float call_Float_java(Float value) {
+			return value;
+		}
+
+		public double call_double_java(double value) {
+			return value;
+		}
+
+		public Double call_Double_java(Double value) {
+			return value;
+		}
+
 		public String call_string_java(String value) {
 			return value;
 		}
@@ -166,6 +227,12 @@ public class DefineFunctionTest {
 		Character call_Character(Character value);
 		int call_int(int value);
 		Integer call_Integer(Integer value);
+		long call_long(long value);
+		Long call_Long(Long value);
+		float call_float(float value);
+		Float call_Float(Float value);
+		double call_double(double value);
+		Double call_Double(Double value);
 
 		String call_string(String value);
 	}
