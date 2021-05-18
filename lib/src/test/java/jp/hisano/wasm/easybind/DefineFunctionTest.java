@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class DefineFuctionTest {
+public class DefineFunctionTest {
 	private DefineModule _module;
 	private DefineLibrary _library;
 
