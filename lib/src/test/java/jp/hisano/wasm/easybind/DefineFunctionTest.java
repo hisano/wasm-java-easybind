@@ -130,6 +130,7 @@ public class DefineFunctionTest {
 
 	@Test
 	public void testCallString() {
+		assertThat(_library.call_string(null)).isEqualTo(null);
 		assertThat(_library.call_string("hello")).isEqualTo("hello");
 	}
 

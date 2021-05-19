@@ -43,8 +43,7 @@ public final class LibraryContext implements Disposable {
 		addConverter(new Class<?>[]{ float.class, Float.class }, Val.Type.F32, jnaValue -> Val.fromF32((Float) jnaValue), wasmValue -> wasmValue.f32());
 		addConverter(new Class<?>[]{ double.class, Double.class }, Val.Type.F64, jnaValue -> Val.fromF64((Double) jnaValue), wasmValue -> wasmValue.f64());
 
-		addConverter(String.class, Val.Type.I32, jnaValue -> Val.fromI32((int) ((jp.hisano.wasm.easybind.Memory) jnaValue).peer), wasmValue -> new Pointer(wasmValue.i32()));
-		addConverter(String[].class, Val.Type.I32, jnaValue -> {
+		addConverter(new Class<?>[] {String.class, String[].class}, Val.Type.I32, jnaValue -> {
 			if (jnaValue == null) {
 				return Val.fromI32(0);
 			}
