@@ -687,6 +687,9 @@ public class CallbackReference extends WeakReference<Callback> {
          */
         private Object convertArgument(Object value, Class<?> dstType) {
             if (value instanceof Pointer) {
+                if (((Pointer)value).peer == 0) {
+                    return null;
+                }
                 if (dstType == String.class) {
                     value = ((Pointer)value).getString(0, encoding);
                 }

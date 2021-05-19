@@ -133,6 +133,14 @@ public class DefineFunctionTest {
 		assertThat(_library.call_string("hello")).isEqualTo("hello");
 	}
 
+	@Test
+	public void testCallStringArray() {
+		assertThat(_library.call_string_array(null)).isNull();
+
+		String[] values = new String[]{"Hello", "World"};
+		assertThat(_library.call_string_array(values)).isEqualTo(values);
+	}
+
 	static class DefineModule implements Module {
 		boolean _isCalled;
 
@@ -211,6 +219,10 @@ public class DefineFunctionTest {
 		public String call_string_java(String value) {
 			return value;
 		}
+
+		public String[] call_string_array_java(String[] value) {
+			return value;
+		}
 	}
 
 	interface DefineLibrary extends Library {
@@ -235,5 +247,6 @@ public class DefineFunctionTest {
 		Double call_Double(Double value);
 
 		String call_string(String value);
+		String[] call_string_array(String[] value);
 	}
 }

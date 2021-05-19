@@ -26,7 +26,8 @@ extern float call_Float_java(float value);
 extern double call_double_java(double value);
 extern double call_Double_java(double value);
 
-extern char * call_string_java(char* value);
+extern char* call_string_java(char* value);
+extern char** call_string_array_java(char** value);
 
 void call_void() {
 	call_void_java();
@@ -100,8 +101,13 @@ double call_Double(double value) {
 	return call_Double_java(value);
 }
 
-char * call_string(char * value) {
+char* call_string(char* value) {
 	return call_string_java(value);
+}
+
+// The last array element is null. This null is appended in the library.
+char** call_string_array(char** value) {
+	return call_string_array_java(value);
 }
 
 #ifdef __cplusplus
